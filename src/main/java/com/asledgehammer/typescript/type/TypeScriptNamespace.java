@@ -104,18 +104,18 @@ public class TypeScriptNamespace
 
     StringBuilder builder = new StringBuilder(prefixOriginal);
 
-    builder.append("export namespace ").append(name).append(" {\n");
+    builder.append("export namespace ").append(fullPath).append(" {\n");
 
     String prefix = prefixOriginal + "  ";
-    List<String> names = new ArrayList<>(namespaces.keySet());
-    names.sort(Comparator.naturalOrder());
+//    List<String> names = new ArrayList<>(namespaces.keySet());
+//    names.sort(Comparator.naturalOrder());
+//
+//    for (String key : names) {
+//      TypeScriptNamespace namespace = this.namespaces.get(key);
+//      builder.append(namespace.compile(prefix)).append('\n');
+//    }
 
-    for (String key : names) {
-      TypeScriptNamespace namespace = this.namespaces.get(key);
-      builder.append(namespace.compile(prefix)).append('\n');
-    }
-
-    names = new ArrayList<>(elements.keySet());
+    List<String> names = new ArrayList<>(elements.keySet());
     names.sort(Comparator.naturalOrder());
 
     for (String key : names) {
@@ -168,5 +168,28 @@ public class TypeScriptNamespace
       }
       return new String[] {split[0], builder.toString()};
     }
+  }
+
+  public boolean hasElements() {
+    return !elements.isEmpty();
+  }
+
+  public Map<String, TypeScriptNamespace> getAllPopulatedNamespaces() {
+    Map<String, TypeScriptNamespace> map = new HashMap<>();
+
+    Set<String> keys = namespaces.keySet();
+    for (String key : keys) {
+      TypeScriptNamespace namespace = namespaces.get(key);
+      if (namespace.hasElements()) {
+        map.put(namespace.fullPath, namespace);
+      }
+      map.putAll(namespace.getAllPopulatedNamespaces());
+    }
+
+    return map;
+  }
+
+  public String getFullPath() {
+    return this.fullPath;
   }
 }

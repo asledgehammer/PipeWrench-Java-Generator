@@ -104,9 +104,10 @@ public abstract class TypeScriptElement
   public static TypeScriptElement resolve(TypeScriptNamespace namespace, Class<?> clazz) {
     if (clazz.isEnum()) {
       return new TypeScriptEnum(namespace, clazz);
-    } else if (clazz.isInterface()) {
-      return new TypeScriptInterface(namespace, clazz);
     }
+//    else if (clazz.isInterface()) {
+//      return new TypeScriptInterface(namespace, clazz);
+//    }
     return new TypeScriptClass(namespace, clazz);
   }
 

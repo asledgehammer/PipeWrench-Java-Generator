@@ -135,6 +135,7 @@ public class ZomboidGenerator {
 
     TypeScriptSettings settings = new TypeScriptSettings();
     settings.recursion = Recursion.NONE;
+    settings.readOnly = true;
 
     TypeScriptCompiler compiler = new TypeScriptCompiler(settings);
     compiler.add(IsoPlayer.class);
@@ -692,6 +693,7 @@ public class ZomboidGenerator {
     compiler.add(ChatBase.class);
     compiler.add(ServerChatMessage.class);
     compiler.add(ChatTab.class);
+    compiler.add(LuaManager.GlobalObject.class);
 
     compiler.walk();
 

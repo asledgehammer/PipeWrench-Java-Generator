@@ -19,14 +19,39 @@ public class TypeScriptGraph {
   }
 
   public String compile() {
+
+    Map<String, TypeScriptNamespace> namespaces = getAllPopulatedNamespaces();
+
     String prefix = "";
     StringBuilder builder = new StringBuilder();
-
+    //
     List<String> names = new ArrayList<>(namespaces.keySet());
     names.sort(Comparator.naturalOrder());
+    //
 
     for (String key : names) {
-      TypeScriptNamespace namespace = this.namespaces.get(key);
+      // Internal Object[] arrays.
+      if (key.startsWith("[L")) continue;
+
+      // Any array.
+      if (key.startsWith("[")) continue;
+
+      if (key.startsWith("void")
+          || key.startsWith("unknown")
+          || key.startsWith("any")
+          || key.startsWith("object")
+          || key.startsWith("boolean")
+          || key.startsWith("byte")
+          || key.startsWith("short")
+          || key.startsWith("int")
+          || key.startsWith("float")
+          || key.startsWith("double")
+          || key.startsWith("long")
+          || key.startsWith("char")
+          || key.startsWith("string")) {
+        continue;
+      }
+      TypeScriptNamespace namespace = namespaces.get(key);
       if (namespace.getName().isEmpty()) continue;
       builder.append(namespace.compile(prefix)).append('\n');
     }
@@ -99,9 +124,6 @@ public class TypeScriptGraph {
       return null;
     }
 
-    if (path.startsWith("[")) {
-      path = path.substring(2);
-    }
     if (path.contains(";")) {
       path = path.replaceAll(";", "");
     }
@@ -117,6 +139,22 @@ public class TypeScriptGraph {
     } else {
       return typeScriptNamespace.resolve(info[1]);
     }
+  }
+
+  public Map<String, TypeScriptNamespace> getAllPopulatedNamespaces() {
+
+    Map<String, TypeScriptNamespace> map = new HashMap<>();
+
+    Set<String> keys = namespaces.keySet();
+    for (String key : keys) {
+      TypeScriptNamespace namespace = namespaces.get(key);
+      if (namespace.hasElements()) {
+        map.put(namespace.getFullPath(), namespace);
+      }
+      map.putAll(namespace.getAllPopulatedNamespaces());
+    }
+
+    return map;
   }
 
   public void set(String path, TypeScriptNamespace namespace) {

@@ -107,6 +107,10 @@ public class TypeScriptClass extends TypeScriptElement {
 
     stringBuilder.append(" {\n");
 
+    if (namespace.getGraph().getCompiler().getSettings().readOnly) {
+      stringBuilder.append(prefix).append("private constructor();\n");
+    }
+
     if (!fields.isEmpty()) {
       List<String> names = new ArrayList<>(fields.keySet());
       names.sort(Comparator.naturalOrder());

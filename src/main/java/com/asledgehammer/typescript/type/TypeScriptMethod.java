@@ -63,6 +63,12 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
 
   @Override
   public String compile(String prefix) {
+    //    return compileLuaAPIVersion();
+    //    return compileTypeScriptFunction(prefix);
+    return compileTypeScriptDefinition(prefix);
+  }
+
+  private String compileTypeScriptDefinition(String prefix) {
     String compiled = prefix + method.getName() + "(";
 
     if (!parameters.isEmpty()) {
@@ -71,7 +77,41 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
       }
       compiled = compiled.substring(0, compiled.length() - 2);
     }
+    compiled += "): " + returnType + ';';
+    return compiled;
+  }
+
+  private String compileTypeScriptFunction(String prefix) {
+    String compiled = "export function " + method.getName() + "(";
+
+    if (!parameters.isEmpty()) {
+      for (TypeScriptMethodParameter parameter : parameters) {
+        compiled += parameter.compile("") + ", ";
+      }
+      compiled = compiled.substring(0, compiled.length() - 2);
+    }
     compiled += "): " + returnType;
+    return compiled;
+  }
+
+  private String compileLuaAPIVersion(String prefix) {
+    String compiled = "function API.";
+    String methodBody = method.getName() + "(";
+    if (!parameters.isEmpty()) {
+      for (TypeScriptMethodParameter parameter : parameters) {
+        methodBody += parameter.name + ", ";
+      }
+      methodBody = methodBody.substring(0, methodBody.length() - 2);
+    }
+    methodBody += ")";
+
+    compiled += methodBody;
+
+    if (!returnType.equalsIgnoreCase("void")) {
+      compiled += " return " + methodBody;
+    }
+
+    compiled += " end";
     return compiled;
   }
 

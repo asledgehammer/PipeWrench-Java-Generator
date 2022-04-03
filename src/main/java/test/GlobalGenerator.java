@@ -18,7 +18,6 @@ public class GlobalGenerator {
         TypeScriptCompiler compiler = new TypeScriptCompiler(settings);
 
         compiler.add(LuaManager.GlobalObject.class);
-        compiler.add(ChatTab.class);
         compiler.walk();
 
         FileWriter writer = new FileWriter("globalobject.d.ts");
