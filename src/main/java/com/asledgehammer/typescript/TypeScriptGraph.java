@@ -1,0 +1,137 @@
+package com.asledgehammer.typescript;
+
+import com.asledgehammer.typescript.type.TypeScriptElement;
+import com.asledgehammer.typescript.type.TypeScriptNamespace;
+
+import java.util.*;
+
+public class TypeScriptGraph {
+  final Map<String, TypeScriptNamespace> namespaces = new HashMap<>();
+
+  private final TypeScriptCompiler compiler;
+  private boolean readOnly = false;
+
+  private boolean addedWhileWalking = false;
+  private boolean walking = false;
+
+  public TypeScriptGraph(TypeScriptCompiler compiler) {
+    this.compiler = compiler;
+  }
+
+  public String compile() {
+    String prefix = "";
+    StringBuilder builder = new StringBuilder();
+
+    List<String> names = new ArrayList<>(namespaces.keySet());
+    names.sort(Comparator.naturalOrder());
+
+    for (String key : names) {
+      TypeScriptNamespace namespace = this.namespaces.get(key);
+      if (namespace.getName().isEmpty()) continue;
+      builder.append(namespace.compile(prefix)).append('\n');
+    }
+
+    return builder.toString();
+  }
+
+  public void walk() {
+    if (readOnly) throw new RuntimeException("Cannot walk when in read-only mode.");
+
+    int cycle = 1;
+    int maxCycles = 1000;
+    walking = true;
+
+    do {
+      System.out.println("Walk: Cycle " + cycle++);
+      addedWhileWalking = false;
+      for (TypeScriptNamespace namespace : new ArrayList<>(namespaces.values())) {
+        namespace.walk(this);
+      }
+    } while (addedWhileWalking && cycle < maxCycles);
+
+    walking = false;
+    readOnly = true;
+  }
+
+  public void add(Class<?>... clazzes) {
+    if (readOnly) throw new RuntimeException("Cannot add classes when in read-only mode.");
+    for (Class<?> clazz : clazzes) {
+      if (clazz.equals(Object.class)
+          || clazz.equals(Void.class)
+          || clazz.equals(Character.class)
+          || clazz.equals(String.class)
+          || clazz.equals(Boolean.class)
+          || clazz.equals(Byte.class)
+          || clazz.equals(Short.class)
+          || clazz.equals(Integer.class)
+          || clazz.equals(Float.class)
+          || clazz.equals(Double.class)
+          || clazz.equals(Long.class)) {
+        continue;
+      }
+      TypeScriptElement element = resolve(clazz.getName());
+      if (walking && element != null && !element.hasWalked()) {
+        addedWhileWalking = true;
+      }
+    }
+  }
+
+  public TypeScriptElement resolve(String path) {
+
+    if (path.trim().isEmpty()) {
+      System.out.println("RESOLVE PATH IS EMPTY.");
+      return null;
+    }
+
+    if (path.equals("any")
+        || path.equals("number")
+        || path.equals("object")
+        || path.equals("unknown")
+        || path.equals("string")
+        || path.equals("void")
+        || path.equals("boolean")
+        || path.equals("byte")
+        || path.equals("short")
+        || path.equals("int")
+        || path.equals("float")
+        || path.equals("double")
+        || path.equals("long")) {
+      return null;
+    }
+
+    if (path.startsWith("[")) {
+      path = path.substring(2);
+    }
+    if (path.contains(";")) {
+      path = path.replaceAll(";", "");
+    }
+
+    String[] info = TypeScriptNamespace.shift(path);
+    TypeScriptNamespace typeScriptNamespace = namespaces.get(info[0]);
+    if (typeScriptNamespace == null) {
+      typeScriptNamespace = new TypeScriptNamespace(this, null, info[0]);
+      namespaces.put(info[0], typeScriptNamespace);
+    }
+    if (info.length == 1) {
+      return typeScriptNamespace.resolve(info[0]);
+    } else {
+      return typeScriptNamespace.resolve(info[1]);
+    }
+  }
+
+  public void set(String path, TypeScriptNamespace namespace) {
+    namespaces.put(path, namespace);
+  }
+
+  public TypeScriptCompiler getCompiler() {
+    return compiler;
+  }
+
+  public boolean isReadOnly() {
+    return readOnly;
+  }
+
+  public boolean isWalking() {
+    return walking;
+  }
+}
