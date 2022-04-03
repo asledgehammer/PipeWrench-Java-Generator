@@ -51,6 +51,14 @@ public class TypeScriptGraph {
           || key.startsWith("string")) {
         continue;
       }
+
+      if(key.equals("java.util.function")) continue;
+
+//      if ((key.contains("._function ") || key.contains("._function."))
+//          && (key.contains(".function ") || key.contains(".function."))) {
+//        continue;
+//      }
+
       TypeScriptNamespace namespace = namespaces.get(key);
       if (namespace.getName().isEmpty()) continue;
       builder.append(namespace.compile(prefix)).append('\n');
@@ -122,6 +130,10 @@ public class TypeScriptGraph {
         || path.equals("double")
         || path.equals("long")) {
       return null;
+    }
+
+    while (path.endsWith("[]")) {
+      path = path.substring(0, path.length() - 2);
     }
 
     if (path.contains(";")) {

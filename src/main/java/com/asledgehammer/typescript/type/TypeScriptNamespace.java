@@ -104,6 +104,10 @@ public class TypeScriptNamespace
 
     StringBuilder builder = new StringBuilder(prefixOriginal);
 
+    String fullPath = this.fullPath;
+    fullPath = fullPath.replaceAll("\\.function ", "._function_ ");
+    fullPath = fullPath.replaceAll("\\.function\\.", "._function_.");
+
     builder.append("export namespace ").append(fullPath).append(" {\n");
 
     String prefix = prefixOriginal + "  ";
