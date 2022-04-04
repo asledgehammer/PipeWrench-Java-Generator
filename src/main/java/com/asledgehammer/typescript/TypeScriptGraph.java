@@ -52,16 +52,13 @@ public class TypeScriptGraph {
         continue;
       }
 
-      if(key.equals("java.util.function")) continue;
-
-//      if ((key.contains("._function ") || key.contains("._function."))
-//          && (key.contains(".function ") || key.contains(".function."))) {
-//        continue;
-//      }
+      if (key.equals("java.util.function")) continue;
 
       TypeScriptNamespace namespace = namespaces.get(key);
       if (namespace.getName().isEmpty()) continue;
-      builder.append(namespace.compile(prefix)).append('\n');
+      String compiled = namespace.compile(prefix);
+      if (compiled.isEmpty()) continue;
+      builder.append(compiled).append('\n');
     }
 
     return builder.toString();

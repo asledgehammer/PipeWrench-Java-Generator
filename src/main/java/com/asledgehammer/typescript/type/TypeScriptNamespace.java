@@ -23,9 +23,7 @@ public class TypeScriptNamespace
     String[] split = path.split("\\.");
     String name = split[split.length - 1];
 
-    if (name.equals("function")) {
-      name = '_' + name;
-    }
+    if (name.equals("function")) name = '_' + name;
 
     this.name = name;
 
@@ -73,7 +71,6 @@ public class TypeScriptNamespace
 
     Recursion recursion = graph.getCompiler().getSettings().recursion;
     if ((clazz != null && clazz.isEnum()) || !graph.isWalking() || recursion == Recursion.ALL) {
-
       if (clazz != null) {
         TypeScriptElement element = TypeScriptElement.resolve(this, clazz);
         elements.put(path, element);
@@ -100,6 +97,16 @@ public class TypeScriptNamespace
   @Override
   public String compile(String prefixOriginal) {
 
+    boolean valid = false;
+    for (TypeScriptElement element : elements.values()) {
+      if (element.isValid()) {
+        valid = true;
+        break;
+      }
+    }
+
+    if (!valid) return "";
+
     namespaces.remove("function");
 
     StringBuilder builder = new StringBuilder(prefixOriginal);
@@ -111,20 +118,15 @@ public class TypeScriptNamespace
     builder.append("export namespace ").append(fullPath).append(" {\n");
 
     String prefix = prefixOriginal + "  ";
-//    List<String> names = new ArrayList<>(namespaces.keySet());
-//    names.sort(Comparator.naturalOrder());
-//
-//    for (String key : names) {
-//      TypeScriptNamespace namespace = this.namespaces.get(key);
-//      builder.append(namespace.compile(prefix)).append('\n');
-//    }
 
     List<String> names = new ArrayList<>(elements.keySet());
     names.sort(Comparator.naturalOrder());
 
     for (String key : names) {
       TypeScriptElement element = elements.get(key);
-      builder.append(element.compile(prefix)).append('\n');
+      if (element.isValid()) {
+        builder.append(element.compile(prefix)).append('\n');
+      }
     }
 
     builder.append(prefixOriginal).append("}");
@@ -136,8 +138,10 @@ public class TypeScriptNamespace
     return elements.get(id);
   }
 
-  public void set(String id, TypeScriptElement object) {
-    elements.put(id, object);
+  public void set(String id, TypeScriptElement element) {
+    if (element.isValid()) {
+      elements.put(id, element);
+    }
   }
 
   public String getName() {

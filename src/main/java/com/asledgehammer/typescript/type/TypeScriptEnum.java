@@ -2,7 +2,15 @@ package com.asledgehammer.typescript.type;
 
 import com.asledgehammer.typescript.TypeScriptGraph;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.*;
+
 public class TypeScriptEnum extends TypeScriptElement implements TypeScriptCompilable {
+
+  private final Map<String, TypeScriptField> fields = new HashMap<>();
+  private final Map<String, TypeScriptMethod> methods = new HashMap<>();
 
   protected TypeScriptEnum(TypeScriptNamespace namespace, Class<?> clazz) {
     super(namespace, clazz);
@@ -10,20 +18,95 @@ public class TypeScriptEnum extends TypeScriptElement implements TypeScriptCompi
 
   @Override
   public void walk(TypeScriptGraph graph) {
+    System.out.println("Walking " + getName());
+    walkFields(graph);
+    walkMethods(graph);
     this.walked = true;
+  }
+
+  private void walkFields(TypeScriptGraph graph) {
+    if (clazz == null) return;
+    for (Field field : clazz.getFields()) {
+      if (!field.getDeclaringClass().equals(clazz)) continue;
+      if (Modifier.isPublic(field.getModifiers())) {
+        fields.put(field.getName(), new TypeScriptField(this, field));
+      }
+    }
+    for (TypeScriptField field : fields.values()) field.walk(graph);
+  }
+
+  private void walkMethods(TypeScriptGraph graph) {
+    if (clazz == null) return;
+    for (Method method : clazz.getMethods()) {
+      if (!method.getDeclaringClass().equals(clazz)) continue;
+      if (Modifier.isPublic(method.getModifiers())) {
+        methods.put(method.getName(), new TypeScriptMethod(this, method));
+      }
+    }
+    for (TypeScriptMethod method : methods.values()) method.walk(graph);
   }
 
   @Override
   public String compile(String prefixOriginal) {
 
-    String prefix = prefixOriginal + "  ";
-    String compiled = prefixOriginal + "export enum " + getName() + " {\n";
+    String className = getName();
 
-    for (Enum<?> value : (Enum<?>[]) (clazz.getEnumConstants())) {
-      compiled += prefix + value.name() + ", \n";
+    String prefix = prefixOriginal + "  ";
+    StringBuilder stringBuilder = new StringBuilder();
+    stringBuilder
+        .append(prefixOriginal)
+        .append("/** [ENUM] ")
+        .append(clazz.getName())
+        .append(" */")
+        .append('\n');
+
+    stringBuilder.append(prefixOriginal).append("export class ").append(getName()).append(" {\n");
+
+    List<Enum<?>> values = Arrays.asList((Enum<?>[]) (clazz.getEnumConstants()));
+    values.sort(Comparator.comparing(Enum::name));
+
+    List<String> enums = new ArrayList<>();
+    if (!values.isEmpty()) {
+      stringBuilder.append(prefix).append("/* ENUM VALUES */\n");
+      for (Enum<?> value : values) {
+        enums.add(value.name());
+        stringBuilder
+            .append(prefix)
+            .append("static readonly ")
+            .append(value.name())
+            .append(": ")
+            .append(className)
+            .append("; \n");
+      }
     }
 
-    compiled += prefixOriginal + "}";
-    return compiled;
+    if (!fields.isEmpty()) {
+      stringBuilder.append('\n').append(prefix).append("/* FIELDS */\n");
+      List<String> names = new ArrayList<>(fields.keySet());
+      names.sort(Comparator.naturalOrder());
+      for (String name : names) {
+        if (enums.contains(name)) continue;
+        TypeScriptField field = fields.get(name);
+        stringBuilder.append(field.compile(prefix)).append('\n');
+      }
+    }
+
+    stringBuilder.append('\n').append(prefix).append("private constructor();\n");
+    stringBuilder.append('\n').append(prefix).append("/* METHODS */\n");
+    stringBuilder.append(prefix).append("static values(): ").append(clazz.getName()).append("[];\n");
+    stringBuilder.append(prefix).append("name(): string;\n");
+    stringBuilder.append(prefix).append("ordinal(): number;\n");
+    stringBuilder.append(prefix).append("valueOf(name: string): ").append(className).append(";\n");
+    if (!methods.isEmpty()) {
+      List<String> names = new ArrayList<>(methods.keySet());
+      names.sort(Comparator.naturalOrder());
+      for (String name : names) {
+        TypeScriptMethod method = methods.get(name);
+        stringBuilder.append(method.compile(prefix)).append('\n');
+      }
+    }
+
+    stringBuilder.append(prefixOriginal).append('}');
+    return stringBuilder.toString();
   }
 }

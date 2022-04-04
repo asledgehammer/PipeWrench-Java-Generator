@@ -105,9 +105,9 @@ public abstract class TypeScriptElement
     if (clazz.isEnum()) {
       return new TypeScriptEnum(namespace, clazz);
     }
-//    else if (clazz.isInterface()) {
-//      return new TypeScriptInterface(namespace, clazz);
-//    }
+    //    else if (clazz.isInterface()) {
+    //      return new TypeScriptInterface(namespace, clazz);
+    //    }
     return new TypeScriptClass(namespace, clazz);
   }
 
@@ -218,5 +218,11 @@ public abstract class TypeScriptElement
       case "java.lang.Void" -> "void";
       default -> type;
     };
+  }
+
+  public boolean isValid() {
+//    boolean isValid = clazz != null || this instanceof TypeScriptType;
+//    if (!isValid) System.out.println("INVALID ELEMENT: " + name);
+    return true;
   }
 }
