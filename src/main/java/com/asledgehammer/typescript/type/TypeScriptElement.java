@@ -119,9 +119,9 @@ public abstract class TypeScriptElement
 
     string = TypeScriptElement.adaptType(string);
 
-    boolean isArray = false;
-    if (string.endsWith("[]")) {
-      isArray = true;
+    int arrayDimCount = 0;
+    while (string.endsWith("[]")) {
+      arrayDimCount++;
       string = string.substring(0, string.length() - 2);
     }
 
@@ -179,13 +179,14 @@ public abstract class TypeScriptElement
       graph.resolve(string);
     }
 
-    if (isArray) {
+    while (arrayDimCount > 0) {
       string += "[]";
+      arrayDimCount--;
     }
 
-//    if (!original.equals(string)) {
-//      System.out.println("inspect: " + original + " -> " + string);
-//    }
+    //    if (!original.equals(string)) {
+    //      System.out.println("inspect: " + original + " -> " + string);
+    //    }
 
     return string;
   }
