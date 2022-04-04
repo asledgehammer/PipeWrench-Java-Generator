@@ -2,6 +2,7 @@ package com.asledgehammer.typescript.type;
 
 import com.asledgehammer.typescript.TypeScriptGraph;
 
+import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +20,21 @@ public class TypeScriptType extends TypeScriptElement {
 
   @Override
   public String compile(String prefix) {
-    String compiled = prefix + "// " + (clazz != null ? clazz.getName() : "(Unknown)") + "\n";
+    String compiled = prefix + "// " + (clazz != null ? clazz.getName() : "(Unknown)");
+
+    if (clazz != null) {
+      Type genericSuperclass = clazz.getGenericSuperclass();
+      if (genericSuperclass != null && !genericSuperclass.equals(Object.class)) {
+        compiled += " extends " + clazz.getGenericSuperclass().getTypeName();
+      } else {
+        Class<?> superClazz = clazz.getSuperclass();
+        if (superClazz != null && !superClazz.equals(Object.class)) {
+          compiled += " extends " + superClazz.getName();
+        }
+      }
+    }
+
+    compiled += '\n';
     compiled += prefix + "export type " + name;
     if (!genericParameters.isEmpty()) {
       compiled += '<';

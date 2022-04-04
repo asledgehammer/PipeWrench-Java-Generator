@@ -22,6 +22,19 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
     this.method = method;
   }
 
+  public static List<String> extractGenericDefinitions(String raw) {
+    List<String> list = new ArrayList<>();
+    int indexOf = raw.indexOf('<');
+    if (indexOf == -1) {
+      return list;
+    }
+    String sub = raw.substring(indexOf + 1, raw.length() - 1);
+    for (String entry : sub.split(",")) {
+      list.add(entry.trim());
+    }
+    return list;
+  }
+
   @Override
   public void walk(TypeScriptGraph graph) {
     Parameter[] parameters = method.getParameters();
@@ -69,7 +82,21 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
   }
 
   private String compileTypeScriptDefinition(String prefix) {
-    String compiled = prefix + method.getName() + "(";
+    String compiled = prefix + method.getName();
+
+    Type[] genericTypes = method.getTypeParameters();
+
+    if (genericTypes.length != 0) {
+      compiled += "<";
+      for (int i = 0; i < genericTypes.length; i++) {
+        Type genericType = genericTypes[i];
+        compiled += genericType.getTypeName() + ", ";
+      }
+      compiled = compiled.substring(0, compiled.length() - 2);
+      compiled += ">";
+    }
+
+    compiled += "(";
 
     if (!parameters.isEmpty()) {
       for (TypeScriptMethodParameter parameter : parameters) {
@@ -134,6 +161,7 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
     private final Type type;
     private final String name;
     private final Parameter parameter;
+    final Type parameterizedType;
     private boolean walked = false;
     private String returnType;
 
@@ -142,6 +170,7 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
       this.parameter = parameter;
       this.type = type;
       this.name = parameter.getName();
+      this.parameterizedType = parameter.getParameterizedType();
     }
 
     @Override

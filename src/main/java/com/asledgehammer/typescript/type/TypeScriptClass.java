@@ -2,10 +2,7 @@ package com.asledgehammer.typescript.type;
 
 import com.asledgehammer.typescript.TypeScriptGraph;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.TypeVariable;
+import java.lang.reflect.*;
 import java.util.*;
 
 public class TypeScriptClass extends TypeScriptElement {
@@ -87,11 +84,20 @@ public class TypeScriptClass extends TypeScriptElement {
   public String compile(String prefixOriginal) {
     String prefix = prefixOriginal + "  ";
     StringBuilder stringBuilder = new StringBuilder(prefixOriginal);
-    stringBuilder
-        .append("// ")
-        .append((clazz != null ? clazz.getName() : "(Unknown)"))
-        .append("\n")
-        .append(prefixOriginal);
+    stringBuilder.append("// ").append((clazz != null ? clazz.getName() : "(Unknown)"));
+    if (clazz != null) {
+      Type genericSuperclass = clazz.getGenericSuperclass();
+      if (genericSuperclass != null) {
+        stringBuilder.append(" extends ").append(clazz.getGenericSuperclass().getTypeName());
+      } else {
+        Class<?> superClazz = clazz.getSuperclass();
+        if (superClazz != null) {
+          stringBuilder.append(" extends ").append(superClazz.getName());
+        }
+      }
+    }
+
+    stringBuilder.append("\n").append(prefixOriginal);
     stringBuilder.append("export class ").append(name);
 
     String compiledParams = "";

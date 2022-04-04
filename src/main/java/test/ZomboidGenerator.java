@@ -141,7 +141,6 @@ public class ZomboidGenerator {
     compiler.add(IsoPlayer.class);
     compiler.add(Vehicle.class);
     compiler.add(BaseVehicle.class);
-
     compiler.add(BufferedReader.class);
     compiler.add(BufferedWriter.class);
     compiler.add(DataInputStream.class);
