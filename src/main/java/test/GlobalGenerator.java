@@ -3,7 +3,7 @@ package test;
 import com.asledgehammer.typescript.TypeScriptCompiler;
 import com.asledgehammer.typescript.settings.Recursion;
 import com.asledgehammer.typescript.settings.TypeScriptSettings;
-import zombie.network.PacketTypes;
+import zombie.Lua.LuaManager;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -16,8 +16,7 @@ public class GlobalGenerator {
 
     TypeScriptCompiler compiler = new TypeScriptCompiler(settings);
 
-    compiler.add(PacketTypes.PacketType.class);
-    //        compiler.add(LuaManager.GlobalObject.class);
+    compiler.add(LuaManager.GlobalObject.class);
     compiler.walk();
 
     FileWriter writer = new FileWriter("globalobject.d.ts");

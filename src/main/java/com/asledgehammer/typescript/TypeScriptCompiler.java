@@ -1,6 +1,8 @@
 package com.asledgehammer.typescript;
 
 import com.asledgehammer.typescript.settings.TypeScriptSettings;
+import com.asledgehammer.typescript.type.TypeScriptElement;
+import zombie.Lua.LuaManager;
 
 public class TypeScriptCompiler {
 
@@ -26,5 +28,9 @@ public class TypeScriptCompiler {
 
   public TypeScriptSettings getSettings() {
     return settings;
+  }
+
+  public TypeScriptElement resolve(Class<?> clazz) {
+    return graph.resolve(clazz.getName());
   }
 }

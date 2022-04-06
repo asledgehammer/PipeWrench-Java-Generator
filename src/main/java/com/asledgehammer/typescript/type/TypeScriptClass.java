@@ -139,4 +139,22 @@ public class TypeScriptClass extends TypeScriptElement {
     stringBuilder.append(prefixOriginal).append("}");
     return stringBuilder.toString();
   }
+
+  @Override
+  public String compileLua(String table) {
+    StringBuilder stringBuilder = new StringBuilder();
+    if (!methods.isEmpty()) {
+      List<String> names = new ArrayList<>(methods.keySet());
+      names.sort(Comparator.naturalOrder());
+      for (String name : names) {
+        TypeScriptMethod method = methods.get(name);
+        stringBuilder.append(method.compileLua(table)).append('\n');
+      }
+    }
+    return stringBuilder.toString();
+  }
+
+  public Map<String, TypeScriptMethod> getMethods() {
+    return this.methods;
+  }
 }

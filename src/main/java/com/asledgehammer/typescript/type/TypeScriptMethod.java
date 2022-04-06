@@ -121,8 +121,8 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
     return compiled;
   }
 
-  private String compileLuaAPIVersion(String prefix) {
-    String compiled = "function API.";
+  public String compileLua(String table) {
+    String compiled = "function " + table + '.';
     String methodBody = method.getName() + "(";
     if (!parameters.isEmpty()) {
       for (TypeScriptMethodParameter parameter : parameters) {

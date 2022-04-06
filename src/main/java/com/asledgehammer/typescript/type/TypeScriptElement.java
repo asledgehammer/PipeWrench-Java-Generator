@@ -225,4 +225,8 @@ public abstract class TypeScriptElement
 //    if (!isValid) System.out.println("INVALID ELEMENT: " + name);
     return true;
   }
+
+  public String compileLua(String table) {
+    return table;
+  }
 }
