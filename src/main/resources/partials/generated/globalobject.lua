@@ -69,7 +69,7 @@ function Exports.createTile(arg0, arg1) end
 function Exports.createWorld(arg0) end
 function Exports.createZombie(arg0, arg1, arg2, arg3, arg4, arg5) return createZombie(arg0, arg1, arg2, arg3, arg4, arg5) end
 function Exports.debugFullyStreamedIn(arg0, arg1) end
-function Exports.debugLuaTable(arg0, arg1) end
+function Exports.debugLuaTable(arg0) end
 function Exports.deleteAllGameModeSaves(arg0) end
 function Exports.deletePlayerSave(arg0) end
 function Exports.deleteSandboxPreset(arg0) end
@@ -280,7 +280,7 @@ function Exports.getSteamWorkshopItemIDs() return getSteamWorkshopItemIDs() end
 function Exports.getSteamWorkshopItemMods(arg0) return getSteamWorkshopItemMods(arg0) end
 function Exports.getSteamWorkshopStagedItems() return getSteamWorkshopStagedItems() end
 function Exports.getTableResult(arg0, arg1) end
-function Exports.getText(arg0, arg1, arg2, arg3) return getText(arg0, arg1, arg2, arg3) end
+function Exports.getText(arg0) return getText(arg0) end
 function Exports.getTextManager() return getTextManager() end
 function Exports.getTextMediaEN(arg0) return getTextMediaEN(arg0) end
 function Exports.getTextOrNull(arg0, arg1, arg2, arg3, arg4) return getTextOrNull(arg0, arg1, arg2, arg3, arg4) end
@@ -420,7 +420,7 @@ function Exports.sendAddXp(arg0, arg1, arg2) end
 function Exports.sendBandage(arg0, arg1, arg2, arg3, arg4, arg5) end
 function Exports.sendCataplasm(arg0, arg1, arg2, arg3, arg4) end
 function Exports.sendCleanBurn(arg0, arg1, arg2, arg3) end
-function Exports.sendClientCommand(arg0, arg1, arg2, arg3) end
+function Exports.sendClientCommand(arg0, arg1, arg2) end
 function Exports.sendClothing(arg0) end
 function Exports.sendDisinfect(arg0, arg1, arg2, arg3) end
 function Exports.sendFactionInvite(arg0, arg1, arg2) end
@@ -500,7 +500,7 @@ function Exports.translatePointXInOverheadMapToWindow(arg0, arg1, arg2, arg3) re
 function Exports.translatePointXInOverheadMapToWorld(arg0, arg1, arg2, arg3) return translatePointXInOverheadMapToWorld(arg0, arg1, arg2, arg3) end
 function Exports.translatePointYInOverheadMapToWindow(arg0, arg1, arg2, arg3) return translatePointYInOverheadMapToWindow(arg0, arg1, arg2, arg3) end
 function Exports.translatePointYInOverheadMapToWorld(arg0, arg1, arg2, arg3) return translatePointYInOverheadMapToWorld(arg0, arg1, arg2, arg3) end
-function Exports.triggerEvent(arg0, arg1) end
+function Exports.triggerEvent(arg0, arg1, arg2) end
 function Exports.updateChatSettings(arg0, arg1, arg2) end
 function Exports.updateFire() end
 function Exports.useStaticErosionRand(arg0) end

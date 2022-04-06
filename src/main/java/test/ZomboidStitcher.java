@@ -38,6 +38,7 @@ public class ZomboidStitcher {
   public static void stitchTypeScript() throws IOException {
     FileWriter writer = new FileWriter(new File(stitchedDir, "Zomboid.d.ts"));
 
+    writer.write("/** @noResolution */\n");
     writer.write("declare module \"Zomboid\" {\n");
     String prefix = "  ";
 
