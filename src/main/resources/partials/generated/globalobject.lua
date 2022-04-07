@@ -11,7 +11,7 @@ function Exports.ProcessSafehouseMessage(arg0) end
 function Exports.Render3DItem(arg0, arg1, arg2, arg3, arg4, arg5) end
 function Exports.SendCommandToServer(arg0) end
 function Exports.SyncXp(arg0) end
-function Exports.ZombRand(arg0, arg1) return ZombRand(arg0, arg1) end
+function Exports.ZombRand(arg0) return ZombRand(arg0) end
 function Exports.ZombRandBetween(arg0, arg1) return ZombRandBetween(arg0, arg1) end
 function Exports.ZombRandFloat(arg0, arg1) return ZombRandFloat(arg0, arg1) end
 function Exports.acceptFactionInvite(arg0, arg1) end
@@ -57,7 +57,7 @@ function Exports.checkServerName(arg0) return checkServerName(arg0) end
 function Exports.cloneItemType(arg0, arg1) return cloneItemType(arg0, arg1) end
 function Exports.configureLighting(arg0) end
 function Exports.connectToServerStateCallback(arg0) end
-function Exports.copyTable(arg0, arg1) return copyTable(arg0, arg1) end
+function Exports.copyTable(arg0) return copyTable(arg0) end
 function Exports.createHordeFromTo(arg0, arg1, arg2, arg3, arg4) end
 function Exports.createHordeInAreaTo(arg0, arg1, arg2, arg3, arg4, arg5, arg6) end
 function Exports.createItemTransaction(arg0, arg1, arg2) end
@@ -69,7 +69,7 @@ function Exports.createTile(arg0, arg1) end
 function Exports.createWorld(arg0) end
 function Exports.createZombie(arg0, arg1, arg2, arg3, arg4, arg5) return createZombie(arg0, arg1, arg2, arg3, arg4, arg5) end
 function Exports.debugFullyStreamedIn(arg0, arg1) end
-function Exports.debugLuaTable(arg0) end
+function Exports.debugLuaTable(arg0, arg1) end
 function Exports.deleteAllGameModeSaves(arg0) end
 function Exports.deletePlayerSave(arg0) end
 function Exports.deleteSandboxPreset(arg0) end
@@ -283,7 +283,7 @@ function Exports.getTableResult(arg0, arg1) end
 function Exports.getText(arg0) return getText(arg0) end
 function Exports.getTextManager() return getTextManager() end
 function Exports.getTextMediaEN(arg0) return getTextMediaEN(arg0) end
-function Exports.getTextOrNull(arg0, arg1, arg2, arg3, arg4) return getTextOrNull(arg0, arg1, arg2, arg3, arg4) end
+function Exports.getTextOrNull(arg0) return getTextOrNull(arg0) end
 function Exports.getTexture(arg0) return getTexture(arg0) end
 function Exports.getTextureFromSaveDir(arg0, arg1) return getTextureFromSaveDir(arg0, arg1) end
 function Exports.getTickets(arg0) end
@@ -434,7 +434,7 @@ function Exports.sendRemoveBullet(arg0, arg1, arg2) end
 function Exports.sendRemoveGlass(arg0, arg1, arg2, arg3) end
 function Exports.sendRequestInventory(arg0) end
 function Exports.sendSafehouseInvite(arg0, arg1, arg2) end
-function Exports.sendServerCommand(arg0, arg1, arg2) end
+function Exports.sendServerCommand(arg0, arg1, arg2, arg3) end
 function Exports.sendSplint(arg0, arg1, arg2, arg3, arg4) end
 function Exports.sendStitch(arg0, arg1, arg2, arg3, arg4) end
 function Exports.sendVisual(arg0) end
@@ -480,7 +480,7 @@ function Exports.steamRequestServerRules(arg0, arg1) return steamRequestServerRu
 function Exports.stopPing() end
 function Exports.stopSound(arg0) end
 function Exports.tabToX(arg0, arg1) return tabToX(arg0, arg1) end
-function Exports.takeScreenshot(arg0) end
+function Exports.takeScreenshot() end
 function Exports.testHelicopter() end
 function Exports.testSound() end
 function Exports.timSort(arg0, arg1) end
@@ -500,7 +500,7 @@ function Exports.translatePointXInOverheadMapToWindow(arg0, arg1, arg2, arg3) re
 function Exports.translatePointXInOverheadMapToWorld(arg0, arg1, arg2, arg3) return translatePointXInOverheadMapToWorld(arg0, arg1, arg2, arg3) end
 function Exports.translatePointYInOverheadMapToWindow(arg0, arg1, arg2, arg3) return translatePointYInOverheadMapToWindow(arg0, arg1, arg2, arg3) end
 function Exports.translatePointYInOverheadMapToWorld(arg0, arg1, arg2, arg3) return translatePointYInOverheadMapToWorld(arg0, arg1, arg2, arg3) end
-function Exports.triggerEvent(arg0, arg1, arg2) end
+function Exports.triggerEvent(arg0) end
 function Exports.updateChatSettings(arg0, arg1, arg2) end
 function Exports.updateFire() end
 function Exports.useStaticErosionRand(arg0) end

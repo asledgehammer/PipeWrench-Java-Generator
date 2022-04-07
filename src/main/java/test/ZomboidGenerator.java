@@ -132,6 +132,7 @@ import zombie.vehicles.*;
 import zombie.world.moddata.ModData;
 
 import java.io.*;
+import java.lang.reflect.TypeVariable;
 import java.nio.IntBuffer;
 import java.rmi.RemoteException;
 import java.text.SimpleDateFormat;
@@ -220,14 +221,32 @@ public class ZomboidGenerator {
     StringBuilder string = new StringBuilder();
     string.append("import { java, se, zombie } from \"./java\";\n\n");
     string.append("// [PARTIAL:START]\n");
+
+    List<Class<?>> known = new ArrayList<>();
     for (Class<?> clazz : clazzes) {
+      if (known.contains(clazz)) continue;
+      else known.add(clazz);
+
+      String className = clazz.getSimpleName();
+      TypeVariable<?>[] vars = clazz.getTypeParameters();
+      StringBuilder varsName = new StringBuilder();
+      if (vars.length != 0) {
+        varsName.append("<");
+        for (TypeVariable<?> var : vars) {
+          varsName.append("any, ");
+        }
+        varsName = new StringBuilder(varsName.substring(0, varsName.length() - 2) + ">");
+      }
+
       string
           .append("export const ")
-          .append(clazz.getSimpleName())
+          .append(className)
           .append(": ")
           .append(clazz.getName())
+          .append(varsName)
           .append(";\n");
     }
+
     string.append("// [PARTIAL:STOP]\n");
     // Commented to prevent overwriting.
     FileWriter writer = new FileWriter(new File(generatedDir, "class_vars.d.ts"));

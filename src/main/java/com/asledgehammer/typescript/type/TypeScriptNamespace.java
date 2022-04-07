@@ -78,6 +78,12 @@ public class TypeScriptNamespace
       }
     }
 
+    if(clazz != null && clazz.getName().startsWith("zombie")) {
+      TypeScriptElement element = TypeScriptElement.resolve(this, clazz);
+      elements.put(path, element);
+      return element;
+    }
+
     TypeScriptType type = new TypeScriptType(this, clazz, path);
     elements.put(path, type);
 
