@@ -1,9 +1,8 @@
-package com.asledgehammer.typescript;
+package com.asledgehammer.typescript.util;
 
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,18 +12,20 @@ public class ComplexGenericMap {
   private final Map<Class<?>, ComplexGenericMap> superMap = new HashMap<>();
   private final List<String> paramDeclarations;
   private final ComplexGenericMap sub;
+  private final Class<?> clazz;
 
   public ComplexGenericMap(Class<?> clazz) {
     this(null, clazz);
   }
 
   private ComplexGenericMap(ComplexGenericMap sub, Class<?> clazz) {
+    this.clazz = clazz;
     this.sub = sub;
-    this.paramDeclarations = extractTypeDeclarations(clazz);
+    this.paramDeclarations = ClazzUtils.extractTypeDeclarations(clazz);
     Class<?> superClazz = clazz.getSuperclass();
     if (superClazz != null) superMap.put(superClazz, new ComplexGenericMap(this, superClazz));
     Class<?>[] interfaces = clazz.getInterfaces();
-    for (Class<?> interfaze : interfaces) superMap.put(interfaze, new ComplexGenericMap(interfaze));
+    for (Class<?> iClazz : interfaces) superMap.put(iClazz, new ComplexGenericMap(this, iClazz));
   }
 
   public ComplexGenericMap getSuper(Class<?> superClazz) {
@@ -41,17 +42,14 @@ public class ComplexGenericMap {
     ComplexGenericMap declMap = getSuper(declClazz);
     if (declMap == null) return paramTypeName;
     TypeVariable<?>[] clazzParams = declClazz.getTypeParameters();
-    int index = -1;
     for (int i = 0; i < clazzParams.length; i++) {
       TypeVariable<?> v = clazzParams[i];
       if (v.getTypeName().equals(paramTypeName)) {
-        index = i;
-        break;
+        ParameterChain chainRoot = new ParameterChain(declMap, i);
+        return chainRoot.resolve();
       }
     }
-    if (index == -1) return paramTypeName;
-    ParameterChain chainRoot = new ParameterChain(declMap, index);
-    return chainRoot.resolve();
+    return paramTypeName;
   }
 
   public String resolveDeclaredParameter(Parameter parameter) {
@@ -59,61 +57,36 @@ public class ComplexGenericMap {
         parameter.getDeclaringExecutable().getDeclaringClass(), parameter.getParameterizedType());
   }
 
-  public static List<String> extractTypeDeclarations(Class<?> clazz) {
-    List<String> list = new ArrayList<>();
-    Type superClazz = clazz.getGenericSuperclass();
-    if (superClazz == null) return list;
-    String raw = superClazz.getTypeName();
-    int indexOf = raw.indexOf("<");
-    if (indexOf == -1) return list;
-    int indexCurrent = indexOf + 1;
-    int inside = 1;
-    StringBuilder builder = new StringBuilder();
-    while (inside != 0) {
-      char next = raw.charAt(indexCurrent++);
-      switch (next) {
-        case '<' -> {
-          inside++;
-          builder.append(next);
-        }
-        case '>' -> {
-          inside--;
-          if (inside == 0) {
-            if (builder.length() != 0) list.add(builder.toString().trim());
-          } else if (inside == 1) {
-            list.add(builder.toString().trim());
-            builder = new StringBuilder();
-          } else builder.append(next);
-        }
-        case ',' -> {
-          if (inside == 1) {
-            list.add(builder.toString().trim());
-            builder = new StringBuilder();
-          } else builder.append(next);
-        }
-        default -> builder.append(next);
-      }
-    }
-    return list;
-  }
-
-  public static class ParameterChain {
+  private static class ParameterChain {
 
     private Class<?> typeClazz;
     private ParameterChain subChainLink;
 
-    ParameterChain(ComplexGenericMap container, int index) {
+    private ParameterChain(ComplexGenericMap container, int index) {
       try {
         this.typeClazz = Class.forName(container.paramDeclarations.get(index));
       } catch (Exception ignored) {
       }
-      if (container.sub != null) subChainLink = new ParameterChain(container.sub, index);
+      if (container.sub != null) {
+        int newIndex = getIndexOfSuper(container.clazz, container.sub.clazz, index);
+        subChainLink = new ParameterChain(container.sub, newIndex);
+      }
     }
 
     public String resolve() {
       if (typeClazz != null) return typeClazz.getName();
       else if (subChainLink != null) return subChainLink.resolve();
       return null;
+    }
+
+    private static int getIndexOfSuper(Class<?> superClazz, Class<?> subClazz, int knownIndex) {
+      String knownParamName = superClazz.getTypeParameters()[knownIndex].getTypeName();
+      TypeVariable<?>[] subVars = subClazz.getTypeParameters();
+      for (int subIndex = 0; subIndex < subVars.length; subIndex++) {
+        TypeVariable<?> subVar = subVars[subIndex];
+        if (subVar.getTypeName().equals(knownParamName)) return subIndex;
+      }
+      return knownIndex;
     }
   }
 }

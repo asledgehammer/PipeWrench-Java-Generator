@@ -171,7 +171,6 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
       this.type = type;
       this.name = parameter.getName();
       this.parameterizedType = parameter.getParameterizedType();
-
     }
 
     @Override
