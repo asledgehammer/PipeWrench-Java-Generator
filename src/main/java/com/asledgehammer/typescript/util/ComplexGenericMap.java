@@ -3,6 +3,7 @@ package com.asledgehammer.typescript.util;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,11 +22,15 @@ public class ComplexGenericMap {
   private ComplexGenericMap(ComplexGenericMap sub, Class<?> clazz) {
     this.clazz = clazz;
     this.sub = sub;
-    this.paramDeclarations = ClazzUtils.extractTypeDeclarations(clazz);
-    Class<?> superClazz = clazz.getSuperclass();
-    if (superClazz != null) superMap.put(superClazz, new ComplexGenericMap(this, superClazz));
-    Class<?>[] interfaces = clazz.getInterfaces();
-    for (Class<?> iClazz : interfaces) superMap.put(iClazz, new ComplexGenericMap(this, iClazz));
+    if (clazz != null) {
+      this.paramDeclarations = ClazzUtils.extractTypeDeclarations(clazz);
+      Class<?> superClazz = clazz.getSuperclass();
+      if (superClazz != null) superMap.put(superClazz, new ComplexGenericMap(this, superClazz));
+      Class<?>[] interfaces = clazz.getInterfaces();
+      for (Class<?> iClazz : interfaces) superMap.put(iClazz, new ComplexGenericMap(this, iClazz));
+    } else {
+      this.paramDeclarations = new ArrayList<>();
+    }
   }
 
   public ComplexGenericMap getSuper(Class<?> superClazz) {
@@ -38,7 +43,10 @@ public class ComplexGenericMap {
   }
 
   public String resolveDeclaredType(Class<?> declClazz, Type paramType) {
-    String paramTypeName = paramType.getTypeName();
+    return resolveDeclaredType(declClazz, paramType.getTypeName());
+  }
+
+  public String resolveDeclaredType(Class<?> declClazz, String paramTypeName) {
     ComplexGenericMap declMap = getSuper(declClazz);
     if (declMap == null) return paramTypeName;
     TypeVariable<?>[] clazzParams = declClazz.getTypeParameters();
@@ -80,7 +88,9 @@ public class ComplexGenericMap {
     }
 
     private static int getIndexOfSuper(Class<?> superClazz, Class<?> subClazz, int knownIndex) {
-      String knownParamName = superClazz.getTypeParameters()[knownIndex].getTypeName();
+      Type[] t = superClazz.getTypeParameters();
+      if (knownIndex >= t.length) return knownIndex;
+      String knownParamName = t[knownIndex].getTypeName();
       TypeVariable<?>[] subVars = subClazz.getTypeParameters();
       for (int subIndex = 0; subIndex < subVars.length; subIndex++) {
         TypeVariable<?> subVar = subVars[subIndex];

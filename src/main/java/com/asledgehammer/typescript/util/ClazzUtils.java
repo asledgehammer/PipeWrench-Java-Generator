@@ -14,7 +14,11 @@ public class ClazzUtils {
     List<String> list = new ArrayList<>();
     Type superClazz = clazz.getGenericSuperclass();
     if (superClazz == null) return list;
-    String raw = superClazz.getTypeName();
+    return extractNestedArgs(superClazz.getTypeName());
+  }
+
+  public static List<String> extractNestedArgs(String raw) {
+    List<String> list = new ArrayList<>();
     int indexOf = raw.indexOf("<");
     if (indexOf == -1) return list;
     int indexCurrent = indexOf + 1;
@@ -32,6 +36,7 @@ public class ClazzUtils {
           if (inside == 0) {
             if (builder.length() != 0) list.add(builder.toString().trim());
           } else if (inside == 1) {
+            builder.append('>');
             list.add(builder.toString().trim());
             builder = new StringBuilder();
           } else builder.append(next);
@@ -116,8 +121,8 @@ public class ClazzUtils {
 
       int modifiers = method.getModifiers();
       if (!Modifier.isPublic(modifiers)
-              || Modifier.isStatic(modifiers)
-              || Modifier.isNative(modifiers)) {
+          || Modifier.isStatic(modifiers)
+          || Modifier.isNative(modifiers)) {
         continue;
       }
 
@@ -133,10 +138,10 @@ public class ClazzUtils {
 
       compiled.append("): ");
       compiled
-              .append(
-                      genericMap.resolveDeclaredType(
-                              method.getDeclaringClass(), method.getGenericReturnType()))
-              .append(";\n");
+          .append(
+              genericMap.resolveDeclaredType(
+                  method.getDeclaringClass(), method.getGenericReturnType()))
+          .append(";\n");
 
       builder.append(compiled);
     }
@@ -144,5 +149,53 @@ public class ClazzUtils {
     builder.append("}");
 
     System.out.println(builder);
+  }
+
+  public static String walkTypesRecursively(
+      ComplexGenericMap genericMap, Class<?> declClazz, String s) {
+
+    int indexOf = s.indexOf('<');
+    if (indexOf != -1) System.out.println("INDEX " + indexOf + "\t" + s);
+    String rootString = indexOf != -1 ? s.substring(0, indexOf) : s;
+
+    s = s.replaceAll("\\? extends ", "").replaceAll("\\? super ", "").replaceAll("capture of ", "");
+
+    boolean hasNestedArgs = indexOf != -1;
+    String nestedArgsString = "";
+
+    if (hasNestedArgs) {
+      List<String> nestedArgs = extractNestedArgs(s);
+      if (!nestedArgs.isEmpty()) {
+        nestedArgsString += "<";
+        for (String inner : nestedArgs) {
+
+          if (inner.indexOf('<') != -1) {
+            nestedArgsString += walkTypesRecursively(genericMap, declClazz, inner) + ", ";
+          } else {
+            if (genericMap != null) {
+              nestedArgsString += genericMap.resolveDeclaredType(declClazz, inner) + ", ";
+            } else {
+              nestedArgsString += inner + ", ";
+            }
+          }
+        }
+        nestedArgsString = nestedArgsString.substring(0, nestedArgsString.length() - 2) + ">";
+      }
+    }
+
+    if (genericMap != null) {
+      rootString = genericMap.resolveDeclaredType(declClazz, rootString);
+    }
+
+    if (hasNestedArgs) System.out.println("\t" + rootString + "\t" + nestedArgsString);
+
+    String result = rootString + nestedArgsString;
+    //      if (!s.equals(result)) {
+    //        System.out.println(s + " => " + rootString);
+    //      }
+
+    result = result.replaceAll("null", "java.lang.Object");
+
+    return result;
   }
 }

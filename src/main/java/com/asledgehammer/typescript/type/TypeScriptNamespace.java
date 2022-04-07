@@ -78,7 +78,7 @@ public class TypeScriptNamespace
       }
     }
 
-    if(clazz != null && clazz.getName().startsWith("zombie")) {
+    if (clazz != null && clazz.getName().startsWith("zombie")) {
       TypeScriptElement element = TypeScriptElement.resolve(this, clazz);
       elements.put(path, element);
       return element;
@@ -205,5 +205,19 @@ public class TypeScriptNamespace
 
   public String getFullPath() {
     return this.fullPath;
+  }
+
+  public List<Class<?>> getAllDeclaredClasses() {
+    List<Class<?>> list = new ArrayList<>();
+    for (TypeScriptNamespace namespace : namespaces.values()) {
+      list.addAll(namespace.getAllDeclaredClasses());
+    }
+    for (TypeScriptElement element : elements.values()) {
+      Class<?> clazz = element.getClazz();
+      if (clazz != null) {
+        list.add(element.getClazz());
+      }
+    }
+    return list;
   }
 }

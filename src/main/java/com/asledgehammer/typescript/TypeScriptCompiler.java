@@ -2,7 +2,8 @@ package com.asledgehammer.typescript;
 
 import com.asledgehammer.typescript.settings.TypeScriptSettings;
 import com.asledgehammer.typescript.type.TypeScriptElement;
-import zombie.Lua.LuaManager;
+
+import java.util.List;
 
 public class TypeScriptCompiler {
 
@@ -32,5 +33,9 @@ public class TypeScriptCompiler {
 
   public TypeScriptElement resolve(Class<?> clazz) {
     return graph.resolve(clazz.getName());
+  }
+
+  public List<Class<?>> getAllDeclaredClasses() {
+    return graph.getAllDeclaredClasses();
   }
 }

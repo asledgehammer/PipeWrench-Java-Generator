@@ -106,6 +106,14 @@ public class TypeScriptGraph {
     }
   }
 
+  public List<Class<?>> getAllDeclaredClasses() {
+    List<Class<?>> list = new ArrayList<>();
+    for(TypeScriptNamespace namespace : namespaces.values()) {
+      list.addAll(namespace.getAllDeclaredClasses());
+    }
+    return list;
+  }
+
   public TypeScriptElement resolve(String path) {
 
     if (path.trim().isEmpty()) {

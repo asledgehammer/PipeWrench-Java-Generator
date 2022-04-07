@@ -1,12 +1,15 @@
 package com.asledgehammer.typescript.type;
 
 import com.asledgehammer.typescript.TypeScriptGraph;
+import com.asledgehammer.typescript.util.ClazzUtils;
+import com.asledgehammer.typescript.util.ComplexGenericMap;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 
 public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkable {
@@ -54,7 +57,16 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
       parameter.walk(graph);
     }
 
-    this.returnType = TypeScriptElement.adaptType(method.getGenericReturnType().getTypeName());
+    ComplexGenericMap genericMap = this.container.genericMap;
+    if (genericMap != null) {
+      Class<?> declClazz = method.getDeclaringClass();
+      String before = method.getGenericReturnType().getTypeName();
+      this.returnType = ClazzUtils.walkTypesRecursively(genericMap, declClazz, before);
+    } else {
+      this.returnType = method.getGenericReturnType().getTypeName();
+    }
+
+    this.returnType = TypeScriptElement.adaptType(this.returnType);
     this.returnType = TypeScriptElement.inspect(graph, this.returnType);
 
     Class<?> returnClazz = method.getReturnType();
@@ -175,10 +187,25 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
 
     @Override
     public void walk(TypeScriptGraph graph) {
-      this.returnType = TypeScriptElement.inspect(graph, type.getTypeName());
-      this.returnType = TypeScriptElement.adaptType(this.returnType);
-      graph.add(method.method.getReturnType());
+      ComplexGenericMap genericMap = this.method.container.genericMap;
+      if (genericMap != null) {
+        Class<?> declClazz = method.method.getDeclaringClass();
+        String before = type.getTypeName();
+        this.returnType = ClazzUtils.walkTypesRecursively(genericMap, declClazz, before);
 
+        if (this.method.container.clazz.getSimpleName().equals("ItemVisuals")) {
+          System.out.println("FINAL: " + before + " => " + this.returnType);
+        }
+      } else {
+        this.returnType = type.getTypeName();
+      }
+
+      this.returnType = TypeScriptElement.inspect(graph, this.returnType);
+      this.returnType = TypeScriptElement.adaptType(this.returnType);
+
+      graph.add(parameter.getType());
+
+      // Add any missing parameters if not defined.
       if (!returnType.contains("<")) {
         TypeVariable[] params = parameter.getType().getTypeParameters();
         if (params.length != 0) {

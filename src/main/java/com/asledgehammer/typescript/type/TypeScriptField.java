@@ -1,6 +1,8 @@
 package com.asledgehammer.typescript.type;
 
 import com.asledgehammer.typescript.TypeScriptGraph;
+import com.asledgehammer.typescript.util.ClazzUtils;
+import com.asledgehammer.typescript.util.ComplexGenericMap;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -21,8 +23,17 @@ public class TypeScriptField implements TypeScriptCompilable, TypeScriptWalkable
   @Override
   public void walk(TypeScriptGraph graph) {
 
+    ComplexGenericMap genericMap = this.container.genericMap;
+    if (genericMap != null) {
+      Class<?> declClazz = field.getDeclaringClass();
+      String before = field.getGenericType().getTypeName();
+      this.adaptedReturn = ClazzUtils.walkTypesRecursively(genericMap, declClazz, before);
+    } else {
+      this.adaptedReturn = field.getGenericType().getTypeName();
+    }
+
     String preAdaptedReturn = field.getGenericType().getTypeName();
-    this.adaptedReturn = TypeScriptElement.adaptType(preAdaptedReturn);
+    this.adaptedReturn = TypeScriptElement.adaptType(this.adaptedReturn);
     if (preAdaptedReturn.equals(adaptedReturn)) {
       graph.add(field.getType());
     }

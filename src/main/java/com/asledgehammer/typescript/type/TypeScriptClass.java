@@ -1,6 +1,7 @@
 package com.asledgehammer.typescript.type;
 
 import com.asledgehammer.typescript.TypeScriptGraph;
+import com.asledgehammer.typescript.util.ComplexGenericMap;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -13,6 +14,7 @@ public class TypeScriptClass extends TypeScriptElement {
 
   protected TypeScriptClass(TypeScriptNamespace namespace, Class<?> clazz) {
     super(namespace, clazz);
+
   }
 
   @Override

@@ -1,6 +1,7 @@
 package com.asledgehammer.typescript.type;
 
 import com.asledgehammer.typescript.TypeScriptGraph;
+import com.asledgehammer.typescript.util.ComplexGenericMap;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,12 +13,14 @@ public abstract class TypeScriptElement
   protected final Map<String, TypeScriptElement> elements = new HashMap<>();
   protected final TypeScriptNamespace namespace;
   protected final Class<?> clazz;
+  final ComplexGenericMap genericMap;
   protected String name;
   protected boolean walked = false;
 
   protected TypeScriptElement(TypeScriptNamespace namespace, Class<?> clazz) {
     this.namespace = namespace;
     this.clazz = clazz;
+    this.genericMap = new ComplexGenericMap(clazz);
 
     if (this.clazz != null) {
       Class<?> enclosingClass = clazz.getEnclosingClass();
@@ -33,6 +36,7 @@ public abstract class TypeScriptElement
   protected TypeScriptElement(TypeScriptNamespace namespace, String name) {
     this.namespace = namespace;
     this.clazz = null;
+    this.genericMap = null;
     this.name = name;
   }
 
