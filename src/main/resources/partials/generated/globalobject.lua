@@ -24,7 +24,7 @@ function Exports.activateSteamOverlayToWorkshopItem(arg0) end
 function Exports.activateSteamOverlayToWorkshopUser() end
 function Exports.addAllBurntVehicles() end
 function Exports.addAllSmashedVehicles() end
-function Exports.addAllVehicles(arg0) end
+function Exports.addAllVehicles() end
 function Exports.addBloodSplat(arg0, arg1) end
 function Exports.addCarCrash() end
 function Exports.addPhysicsObject() return addPhysicsObject() end
@@ -280,10 +280,10 @@ function Exports.getSteamWorkshopItemIDs() return getSteamWorkshopItemIDs() end
 function Exports.getSteamWorkshopItemMods(arg0) return getSteamWorkshopItemMods(arg0) end
 function Exports.getSteamWorkshopStagedItems() return getSteamWorkshopStagedItems() end
 function Exports.getTableResult(arg0, arg1) end
-function Exports.getText(arg0, arg1, arg2, arg3) return getText(arg0, arg1, arg2, arg3) end
+function Exports.getText(arg0, arg1, arg2, arg3, arg4) return getText(arg0, arg1, arg2, arg3, arg4) end
 function Exports.getTextManager() return getTextManager() end
 function Exports.getTextMediaEN(arg0) return getTextMediaEN(arg0) end
-function Exports.getTextOrNull(arg0, arg1) return getTextOrNull(arg0, arg1) end
+function Exports.getTextOrNull(arg0, arg1, arg2, arg3, arg4) return getTextOrNull(arg0, arg1, arg2, arg3, arg4) end
 function Exports.getTexture(arg0) return getTexture(arg0) end
 function Exports.getTextureFromSaveDir(arg0, arg1) return getTextureFromSaveDir(arg0, arg1) end
 function Exports.getTickets(arg0) end
@@ -480,7 +480,7 @@ function Exports.steamRequestServerRules(arg0, arg1) return steamRequestServerRu
 function Exports.stopPing() end
 function Exports.stopSound(arg0) end
 function Exports.tabToX(arg0, arg1) return tabToX(arg0, arg1) end
-function Exports.takeScreenshot(arg0) end
+function Exports.takeScreenshot() end
 function Exports.testHelicopter() end
 function Exports.testSound() end
 function Exports.timSort(arg0, arg1) end
@@ -500,7 +500,7 @@ function Exports.translatePointXInOverheadMapToWindow(arg0, arg1, arg2, arg3) re
 function Exports.translatePointXInOverheadMapToWorld(arg0, arg1, arg2, arg3) return translatePointXInOverheadMapToWorld(arg0, arg1, arg2, arg3) end
 function Exports.translatePointYInOverheadMapToWindow(arg0, arg1, arg2, arg3) return translatePointYInOverheadMapToWindow(arg0, arg1, arg2, arg3) end
 function Exports.translatePointYInOverheadMapToWorld(arg0, arg1, arg2, arg3) return translatePointYInOverheadMapToWorld(arg0, arg1, arg2, arg3) end
-function Exports.triggerEvent(arg0, arg1) end
+function Exports.triggerEvent(arg0) end
 function Exports.updateChatSettings(arg0, arg1, arg2) end
 function Exports.updateFire() end
 function Exports.useStaticErosionRand(arg0) end

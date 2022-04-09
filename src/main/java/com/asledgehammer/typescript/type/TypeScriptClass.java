@@ -1,7 +1,6 @@
 package com.asledgehammer.typescript.type;
 
 import com.asledgehammer.typescript.TypeScriptGraph;
-import com.asledgehammer.typescript.util.ComplexGenericMap;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -10,16 +9,18 @@ public class TypeScriptClass extends TypeScriptElement {
 
   private final List<TypeScriptGeneric> genericParameters = new ArrayList<>();
   private final Map<String, TypeScriptField> fields = new HashMap<>();
-  private final Map<String, TypeScriptMethod> methods = new HashMap<>();
+  private final Map<String, List<TypeScriptMethod>> methods = new HashMap<>();
+  private TypeScriptConstructor constructor;
 
   protected TypeScriptClass(TypeScriptNamespace namespace, Class<?> clazz) {
     super(namespace, clazz);
-
   }
 
   @Override
   public void walk(TypeScriptGraph graph) {
+    if (this.walked) return;
     System.out.println("Walking " + getName());
+    walkConstructors(graph);
     walkGenericParameters(graph);
     walkFields(graph);
     walkMethods(graph);
@@ -28,10 +29,15 @@ public class TypeScriptClass extends TypeScriptElement {
     this.walked = true;
   }
 
+  private void walkConstructors(TypeScriptGraph graph) {
+    if (clazz == null) return;
+    constructor = new TypeScriptConstructor(this);
+    constructor.walk(graph);
+  }
+
   private void checkDuplicateFieldMethods(TypeScriptGraph graph) {
     List<String> names = new ArrayList<>(fields.keySet());
     for (String fieldName : names) {
-      TypeScriptField typeScriptField = this.fields.get(fieldName);
       if (methods.containsKey(fieldName)) {
         System.out.println(
             "(Class " + this.name + ") -> Removing duplicate field as function: " + fieldName);
@@ -64,6 +70,7 @@ public class TypeScriptClass extends TypeScriptElement {
 
   private void walkFields(TypeScriptGraph graph) {
     if (clazz == null) return;
+    fields.clear();
     for (Field field : clazz.getFields()) {
       if (Modifier.isPublic(field.getModifiers())) {
         fields.put(field.getName(), new TypeScriptField(this, field));
@@ -74,12 +81,17 @@ public class TypeScriptClass extends TypeScriptElement {
 
   private void walkMethods(TypeScriptGraph graph) {
     if (clazz == null) return;
+    methods.clear();
     for (Method method : clazz.getMethods()) {
       if (Modifier.isPublic(method.getModifiers())) {
-        methods.put(method.getName(), new TypeScriptMethod(this, method));
+        List<TypeScriptMethod> ms =
+            methods.computeIfAbsent(method.getName(), s -> new ArrayList<>());
+        ms.add(new TypeScriptMethod(this, method));
       }
     }
-    for (TypeScriptMethod method : methods.values()) method.walk(graph);
+    for (List<TypeScriptMethod> methods : this.methods.values()) {
+      for (TypeScriptMethod method : methods) method.walk(graph);
+    }
   }
 
   @Override
@@ -115,10 +127,6 @@ public class TypeScriptClass extends TypeScriptElement {
 
     stringBuilder.append(" {\n");
 
-    if (namespace.getGraph().getCompiler().getSettings().readOnly) {
-      stringBuilder.append(prefix).append("private constructor();\n");
-    }
-
     if (!fields.isEmpty()) {
       List<String> names = new ArrayList<>(fields.keySet());
       names.sort(Comparator.naturalOrder());
@@ -129,12 +137,22 @@ public class TypeScriptClass extends TypeScriptElement {
       stringBuilder.append('\n');
     }
 
+    if (constructor.exists) {
+      stringBuilder.append(constructor.compile(prefix)).append("\n\n");
+    } else {
+      if (namespace.getGraph().getCompiler().getSettings().readOnly) {
+        stringBuilder.append(prefix).append("private constructor();\n\n");
+      }
+    }
+
     if (!methods.isEmpty()) {
       List<String> names = new ArrayList<>(methods.keySet());
       names.sort(Comparator.naturalOrder());
       for (String name : names) {
-        TypeScriptMethod method = methods.get(name);
-        stringBuilder.append(method.compile(prefix)).append('\n');
+        List<TypeScriptMethod> methods = this.methods.get(name);
+        for (TypeScriptMethod method : methods) {
+          stringBuilder.append(method.compile(prefix)).append('\n');
+        }
       }
     }
 
@@ -149,14 +167,16 @@ public class TypeScriptClass extends TypeScriptElement {
       List<String> names = new ArrayList<>(methods.keySet());
       names.sort(Comparator.naturalOrder());
       for (String name : names) {
-        TypeScriptMethod method = methods.get(name);
-        stringBuilder.append(method.compileLua(table)).append('\n');
+        List<TypeScriptMethod> methods = this.methods.get(name);
+        for (TypeScriptMethod method : methods) {
+          stringBuilder.append(method.compileLua(table)).append('\n');
+        }
       }
     }
     return stringBuilder.toString();
   }
 
-  public Map<String, TypeScriptMethod> getMethods() {
+  public Map<String, List<TypeScriptMethod>> getMethods() {
     return this.methods;
   }
 }

@@ -178,7 +178,7 @@ public class ZomboidGenerator {
     writer.flush();
     writer.close();
 
-    generateNativeClassReferences(compiler.getAllDeclaredClasses());
+    generateNativeClassReferences(compiler.getAllKnownClasses());
   }
 
   private static void generateGlobalAPI() throws IOException {
@@ -196,13 +196,15 @@ public class ZomboidGenerator {
     TypeScriptClass globalObject =
         (TypeScriptClass) compiler.resolve(LuaManager.GlobalObject.class);
 
-    Map<String, TypeScriptMethod> methods = globalObject.getMethods();
+    Map<String, List<TypeScriptMethod>> methods = globalObject.getMethods();
     List<String> methodNames = new ArrayList<>(methods.keySet());
     methodNames.sort(Comparator.naturalOrder());
 
     for (String methodName : methodNames) {
-      TypeScriptMethod method = methods.get(methodName);
-      writer.write("export function " + method.compile("") + '\n');
+      List<TypeScriptMethod> methodsList = methods.get(methodName);
+      for (TypeScriptMethod method : methodsList) {
+        writer.write("export function " + method.compile("") + '\n');
+      }
     }
 
     writer.write("// [PARTIAL:STOP]\n");
@@ -220,7 +222,7 @@ public class ZomboidGenerator {
   // Fix for LWJGL environment-required classes.
   public static void generateNativeClassReferences(List<Class<?>> classes) throws IOException {
     StringBuilder string = new StringBuilder();
-    string.append("import { java, se, zombie } from \"./java\";\n\n");
+    string.append("import { fmod, gnu, java, org, se, zombie } from \"./java\";\n\n");
     string.append("// [PARTIAL:START]\n");
 
     List<String> known = new ArrayList<>();

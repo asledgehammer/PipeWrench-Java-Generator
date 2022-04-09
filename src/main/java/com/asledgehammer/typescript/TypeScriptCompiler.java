@@ -38,4 +38,8 @@ public class TypeScriptCompiler {
   public List<Class<?>> getAllDeclaredClasses() {
     return graph.getAllDeclaredClasses();
   }
+
+  public List<Class<?>> getAllKnownClasses() {
+    return graph.getAllKnownClasses();
+  }
 }

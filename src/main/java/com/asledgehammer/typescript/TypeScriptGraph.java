@@ -7,12 +7,16 @@ import java.util.*;
 
 public class TypeScriptGraph {
   final Map<String, TypeScriptNamespace> namespaces = new HashMap<>();
-
+  final List<Class<?>> knownClasses = new ArrayList<>();
   private final TypeScriptCompiler compiler;
   private boolean readOnly = false;
 
   private boolean addedWhileWalking = false;
   private boolean walking = false;
+
+  public List<Class<?>> getAllKnownClasses() {
+    return knownClasses;
+  }
 
   public TypeScriptGraph(TypeScriptCompiler compiler) {
     this.compiler = compiler;
@@ -103,12 +107,28 @@ public class TypeScriptGraph {
       if (walking && element != null && !element.hasWalked()) {
         addedWhileWalking = true;
       }
+
+      if (clazz.isArray()) clazz = clazz.getComponentType();
+      if (clazz.equals(Void.class)
+          || clazz.equals(Object.class)
+          || clazz.equals(Boolean.class)
+          || clazz.equals(Byte.class)
+          || clazz.equals(Short.class)
+          || clazz.equals(Integer.class)
+          || clazz.equals(Float.class)
+          || clazz.equals(Double.class)
+          || clazz.equals(Long.class)
+          || clazz.equals(Character.class)
+          || clazz.equals(String.class)) {
+        return;
+      }
+      if (!knownClasses.contains(clazz)) knownClasses.add(clazz);
     }
   }
 
   public List<Class<?>> getAllDeclaredClasses() {
     List<Class<?>> list = new ArrayList<>();
-    for(TypeScriptNamespace namespace : namespaces.values()) {
+    for (TypeScriptNamespace namespace : namespaces.values()) {
       list.addAll(namespace.getAllDeclaredClasses());
     }
     return list;

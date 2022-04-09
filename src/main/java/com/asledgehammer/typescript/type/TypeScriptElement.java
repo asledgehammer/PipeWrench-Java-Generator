@@ -178,9 +178,20 @@ public abstract class TypeScriptElement
 
     int index = string.indexOf("<");
     if (index != -1) {
-      graph.resolve(string.substring(0, index));
+      String forName = string.substring(0, index).replace("._function", ".function");
+      try {
+        Class<?> cl = Class.forName(forName);
+        graph.add(cl);
+      } catch (Exception ignored) {
+      }
     } else {
-      graph.resolve(string);
+      try {
+        String forName = string.replace("._function", ".function");
+        //        System.out.println("ForName: " + string);
+        Class<?> cl = Class.forName(forName);
+        graph.add(cl);
+      } catch (Exception ignored) {
+      }
     }
 
     while (arrayDimCount > 0) {
@@ -225,8 +236,8 @@ public abstract class TypeScriptElement
   }
 
   public boolean isValid() {
-//    boolean isValid = clazz != null || this instanceof TypeScriptType;
-//    if (!isValid) System.out.println("INVALID ELEMENT: " + name);
+    //    boolean isValid = clazz != null || this instanceof TypeScriptType;
+    //    if (!isValid) System.out.println("INVALID ELEMENT: " + name);
     return true;
   }
 

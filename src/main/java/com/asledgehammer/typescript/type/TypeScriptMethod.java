@@ -3,13 +3,10 @@ package com.asledgehammer.typescript.type;
 import com.asledgehammer.typescript.TypeScriptGraph;
 import com.asledgehammer.typescript.util.ClazzUtils;
 import com.asledgehammer.typescript.util.ComplexGenericMap;
+import com.asledgehammer.typescript.util.DocBuilder;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
+import java.lang.reflect.*;
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.List;
 
 public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkable {
@@ -17,12 +14,14 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
   private final TypeScriptElement container;
   private final Method method;
   private final List<TypeScriptMethodParameter> parameters = new ArrayList<>();
+  private final boolean isStatic;
   private boolean walked = false;
   private String returnType;
 
   public TypeScriptMethod(TypeScriptElement container, Method method) {
     this.container = container;
     this.method = method;
+    this.isStatic = Modifier.isStatic(this.method.getModifiers());
   }
 
   public static List<String> extractGenericDefinitions(String raw) {
@@ -88,15 +87,48 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
 
   @Override
   public String compile(String prefix) {
-    //    return compileLuaAPIVersion();
-    //    return compileTypeScriptFunction(prefix);
-    return compileTypeScriptDefinition(prefix);
+    return compileTypeScriptDeclaration(prefix);
   }
 
-  private String compileTypeScriptDefinition(String prefix) {
-    String compiled = prefix + method.getName();
+  private String compileTypeScriptDeclaration(String prefix) {
+    StringBuilder builder = new StringBuilder();
 
+    Parameter[] parameters = method.getParameters();
     Type[] genericTypes = method.getTypeParameters();
+
+    ComplexGenericMap genericMap = container.genericMap;
+
+    DocBuilder doc = new DocBuilder();
+    if (isStatic) {
+      doc.appendLine("@noSelf");
+    }
+    if (parameters.length != 0) {
+      if (!doc.isEmpty()) {
+        doc.appendLine();
+      }
+      String compiled = "(";
+      for (Parameter parameter : parameters) {
+        String tName = parameter.getType().getSimpleName() + " " + parameter.getName();
+        if (genericMap != null) {
+          tName = ClazzUtils.walkTypesRecursively(genericMap, container.clazz, tName);
+        }
+        tName = TypeScriptElement.adaptType(tName);
+        tName = TypeScriptElement.inspect(container.namespace.getGraph(), tName);
+        compiled += tName + ", ";
+      }
+      compiled =
+          compiled.substring(0, compiled.length() - 2)
+              + "): "
+              + method.getReturnType().getSimpleName();
+
+      doc.appendLine(compiled);
+    }
+
+    if (!doc.isEmpty()) {
+      builder.append(doc.build(prefix)).append('\n');
+    }
+
+    String compiled = prefix + (isStatic ? "static " : "") + method.getName();
 
     if (genericTypes.length != 0) {
       compiled += "<";
@@ -110,14 +142,16 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
 
     compiled += "(";
 
-    if (!parameters.isEmpty()) {
-      for (TypeScriptMethodParameter parameter : parameters) {
+    if (!this.parameters.isEmpty()) {
+      for (TypeScriptMethodParameter parameter : this.parameters) {
         compiled += parameter.compile("") + ", ";
       }
       compiled = compiled.substring(0, compiled.length() - 2);
     }
     compiled += "): " + returnType + ';';
-    return compiled;
+
+    builder.append(compiled);
+    return builder.toString();
   }
 
   private String compileTypeScriptFunction(String prefix) {

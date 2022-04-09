@@ -3,6 +3,7 @@ package com.asledgehammer.typescript.type;
 import com.asledgehammer.typescript.TypeScriptGraph;
 import com.asledgehammer.typescript.util.ClazzUtils;
 import com.asledgehammer.typescript.util.ComplexGenericMap;
+import com.asledgehammer.typescript.util.DocBuilder;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -32,13 +33,15 @@ public class TypeScriptField implements TypeScriptCompilable, TypeScriptWalkable
       this.adaptedReturn = field.getGenericType().getTypeName();
     }
 
-    String preAdaptedReturn = field.getGenericType().getTypeName();
     this.adaptedReturn = TypeScriptElement.adaptType(this.adaptedReturn);
-    if (preAdaptedReturn.equals(adaptedReturn)) {
-      graph.add(field.getType());
-    }
 
     this.adaptedReturn = TypeScriptElement.inspect(graph, this.adaptedReturn);
+
+    try {
+      Class<?> cl = Class.forName(this.adaptedReturn);
+      graph.add(cl);
+    } catch (Exception ignored) {
+    }
 
     if (!adaptedReturn.contains("<")) {
       TypeVariable[] params = field.getType().getTypeParameters();
@@ -60,8 +63,14 @@ public class TypeScriptField implements TypeScriptCompilable, TypeScriptWalkable
     boolean isStatic = Modifier.isStatic(modifiers);
     boolean isFinal = Modifier.isFinal(modifiers);
     boolean isPrimitive = field.getType().isPrimitive();
+
+    DocBuilder doc = new DocBuilder();
+    doc.appendLine(field.getGenericType().getTypeName());
+
     String compiled =
-        prefix
+        doc.build(prefix)
+            + '\n'
+            + prefix
             + (isStatic ? "static " : "")
             + (isFinal ? "readonly " : "")
             + field.getName()
