@@ -48,7 +48,7 @@ public class DocBuilder {
       return prefix + "/** " + lines.get(0) + " */";
     }
 
-    StringBuilder builder = new StringBuilder(prefix).append("/*\n");
+    StringBuilder builder = new StringBuilder(prefix).append("/**\n");
     for (String line : lines) {
       if (line == null || line.isEmpty()) {
         builder.append(prefix).append(" *\n");
