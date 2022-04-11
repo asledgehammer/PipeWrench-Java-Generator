@@ -2,17 +2,33 @@ package test;
 
 import com.asledgehammer.typescript.TypeScriptCompiler;
 import com.asledgehammer.typescript.settings.TypeScriptSettings;
+import com.asledgehammer.typescript.type.TypeScriptClass;
+import com.asledgehammer.typescript.type.TypeScriptElement;
+import zombie.util.list.PZArrayList;
+
+import java.util.List;
 
 public class TestClass {
 
   public static void main(String[] args) {
     TypeScriptCompiler compiler = new TypeScriptCompiler(new TypeScriptSettings());
     compiler.add(ExampleClass.class);
+    compiler.add(PZArrayList.class);
     compiler.walk();
+
+    String compiled = compiler.compile();
+    compiled += '\n';
+
+    List<TypeScriptElement> elements = compiler.getAllGeneratedElements();
+    for (TypeScriptElement element : elements) {
+      if (!(element instanceof TypeScriptClass tsClass)) {
+        continue;
+      }
+      compiled += tsClass.compileStaticOnly("") + "\n\n";
+    }
+
     System.out.println("\n\n\nRESULT: ");
-    System.out.println(compiler.compile());
-    System.out.println();
-    System.out.println(compiler.getAllKnownClasses());
+    System.out.println(compiled);
   }
 }
 

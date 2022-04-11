@@ -13,12 +13,31 @@ public class TypeScriptField implements TypeScriptCompilable, TypeScriptWalkable
 
   private final TypeScriptElement container;
   private final Field field;
+  private final boolean bStatic;
+  private final boolean bFinal;
+  private final boolean bPrimitive;
   private boolean walked = false;
   private String adaptedReturn;
+
+  public boolean isStatic() {
+    return bStatic;
+  }
+
+  public boolean isFinal() {
+    return bFinal;
+  }
+
+  public boolean isPrimitive() {
+    return bPrimitive;
+  }
 
   public TypeScriptField(TypeScriptElement container, Field field) {
     this.container = container;
     this.field = field;
+    int modifiers = field.getModifiers();
+    this.bStatic = Modifier.isStatic(modifiers);
+    this.bFinal = Modifier.isFinal(modifiers);
+    this.bPrimitive = field.getType().isPrimitive();
   }
 
   @Override

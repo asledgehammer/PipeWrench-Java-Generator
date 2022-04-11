@@ -94,6 +94,68 @@ public class TypeScriptClass extends TypeScriptElement {
     }
   }
 
+  public String compileStaticOnly(String prefixOriginal) {
+    if (clazz == null) return "";
+    String prefix = prefixOriginal + "  ";
+
+    String name = clazz.getSimpleName();
+    if (name.contains("$")) {
+      String[] split = name.split("\\$");
+      name = split[split.length - 1];
+    }
+
+    StringBuilder stringBuilder = new StringBuilder(prefixOriginal);
+    stringBuilder.append("// ").append(name);
+    if (clazz != null) {
+      Type genericSuperclass = clazz.getGenericSuperclass();
+      if (genericSuperclass != null) {
+        stringBuilder.append(" extends ").append(clazz.getGenericSuperclass().getTypeName());
+      } else {
+        Class<?> superClazz = clazz.getSuperclass();
+        if (superClazz != null) {
+          stringBuilder.append(" extends ").append(superClazz.getName());
+        }
+      }
+    }
+
+    stringBuilder.append("\n").append(prefixOriginal);
+    stringBuilder.append("export class ").append(name);
+    stringBuilder.append(" {\n");
+    stringBuilder.append(prefix).append("private constructor();\n");
+
+    if (!fields.isEmpty()) {
+      List<String> names = new ArrayList<>(fields.keySet());
+      names.sort(Comparator.naturalOrder());
+      for (String _name : names) {
+        TypeScriptField field = fields.get(_name);
+        if (field.isStatic()) {
+          stringBuilder.append(field.compile(prefix)).append('\n');
+        }
+      }
+      stringBuilder.append('\n');
+    }
+
+    if (constructor.exists) {
+      stringBuilder.append(constructor.compile(prefix)).append("\n\n");
+    }
+
+    if (!methods.isEmpty()) {
+      List<String> names = new ArrayList<>(methods.keySet());
+      names.sort(Comparator.naturalOrder());
+      for (String _name : names) {
+        List<TypeScriptMethod> methods = this.methods.get(_name);
+        for (TypeScriptMethod method : methods) {
+          if (method.isStatic()) {
+            stringBuilder.append(method.compile(prefix)).append('\n');
+          }
+        }
+      }
+    }
+
+    stringBuilder.append(prefixOriginal).append("}");
+    return stringBuilder.toString();
+  }
+
   @Override
   public String compile(String prefixOriginal) {
     String prefix = prefixOriginal + "  ";
@@ -132,18 +194,20 @@ public class TypeScriptClass extends TypeScriptElement {
       names.sort(Comparator.naturalOrder());
       for (String name : names) {
         TypeScriptField field = fields.get(name);
-        stringBuilder.append(field.compile(prefix)).append('\n');
+        if (!field.isStatic()) {
+          stringBuilder.append(field.compile(prefix)).append('\n');
+        }
       }
       stringBuilder.append('\n');
     }
 
-    if (constructor.exists) {
-      stringBuilder.append(constructor.compile(prefix)).append("\n\n");
-    } else {
-      if (namespace.getGraph().getCompiler().getSettings().readOnly) {
-        stringBuilder.append(prefix).append("private constructor();\n\n");
-      }
-    }
+    //    if (constructor.exists) {
+    //      stringBuilder.append(constructor.compile(prefix)).append("\n\n");
+    //    } else {
+    //    if (namespace.getGraph().getCompiler().getSettings().readOnly) {
+    stringBuilder.append(prefix).append("private constructor();\n\n");
+    //    }
+    //    }
 
     if (!methods.isEmpty()) {
       List<String> names = new ArrayList<>(methods.keySet());
@@ -151,7 +215,9 @@ public class TypeScriptClass extends TypeScriptElement {
       for (String name : names) {
         List<TypeScriptMethod> methods = this.methods.get(name);
         for (TypeScriptMethod method : methods) {
-          stringBuilder.append(method.compile(prefix)).append('\n');
+          if (!method.isStatic()) {
+            stringBuilder.append(method.compile(prefix)).append('\n');
+          }
         }
       }
     }

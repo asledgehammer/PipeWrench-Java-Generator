@@ -14,14 +14,18 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
   private final TypeScriptElement container;
   private final Method method;
   private final List<TypeScriptMethodParameter> parameters = new ArrayList<>();
-  private final boolean isStatic;
+  private final boolean bStatic;
   private boolean walked = false;
   private String returnType;
+
+  public boolean isStatic() {
+    return bStatic;
+  }
 
   public TypeScriptMethod(TypeScriptElement container, Method method) {
     this.container = container;
     this.method = method;
-    this.isStatic = Modifier.isStatic(this.method.getModifiers());
+    this.bStatic = Modifier.isStatic(this.method.getModifiers());
   }
 
   public static List<String> extractGenericDefinitions(String raw) {
@@ -99,7 +103,7 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
     ComplexGenericMap genericMap = container.genericMap;
 
     DocBuilder doc = new DocBuilder();
-    if (isStatic) {
+    if (bStatic) {
       doc.appendLine("@noSelf");
     }
     if (parameters.length != 0) {
@@ -128,7 +132,7 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
       builder.append(doc.build(prefix)).append('\n');
     }
 
-    String compiled = prefix + (isStatic ? "static " : "") + method.getName();
+    String compiled = prefix + (bStatic ? "static " : "") + method.getName();
 
     if (genericTypes.length != 0) {
       compiled += "<";
@@ -182,6 +186,8 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
 
     if (!returnType.equalsIgnoreCase("void")) {
       compiled += " return " + methodBody;
+    } else {
+      compiled += ' ' + methodBody;
     }
 
     compiled += " end";

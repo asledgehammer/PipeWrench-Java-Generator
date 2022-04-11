@@ -4,6 +4,7 @@ import com.asledgehammer.typescript.TypeScriptCompiler;
 import com.asledgehammer.typescript.settings.Recursion;
 import com.asledgehammer.typescript.settings.TypeScriptSettings;
 import com.asledgehammer.typescript.type.TypeScriptClass;
+import com.asledgehammer.typescript.type.TypeScriptElement;
 import com.asledgehammer.typescript.type.TypeScriptMethod;
 import fmod.fmod.EmitterType;
 import fmod.fmod.FMODAudio;
@@ -132,7 +133,6 @@ import zombie.vehicles.*;
 import zombie.world.moddata.ModData;
 
 import java.io.*;
-import java.lang.reflect.TypeVariable;
 import java.nio.IntBuffer;
 import java.rmi.RemoteException;
 import java.text.SimpleDateFormat;
@@ -178,7 +178,57 @@ public class ZomboidGenerator {
     writer.flush();
     writer.close();
 
-    generateNativeClassReferences(compiler.getAllKnownClasses());
+    List<TypeScriptElement> elements = compiler.getAllGeneratedElements();
+
+    generateNativeClassReferences(elements);
+  }
+
+  public static void generateNativeClassReferences(List<TypeScriptElement> elements)
+      throws IOException {
+    StringBuilder string = new StringBuilder();
+    string.append("import { fmod, gnu, java, org, se, zombie } from \"./java\";\n\n");
+    string.append("// [PARTIAL:START]\n");
+
+    for (TypeScriptElement element : elements) {
+      if (!(element instanceof TypeScriptClass tsClass)) {
+        continue;
+      }
+      string.append(tsClass.compileStaticOnly("")).append("\n\n");
+    }
+
+    string.append("// [PARTIAL:STOP]\n");
+
+    FileWriter writer = new FileWriter(new File(generatedDir, "class_vars.d.ts"));
+    writer.write(string.toString());
+    writer.flush();
+    writer.close();
+
+    string = new StringBuilder();
+    string.append("local Exports = {}\n\n-- [PARTIAL:START]\n");
+
+    for (TypeScriptElement element : elements) {
+      if (!(element instanceof TypeScriptClass tsClass)) {
+        continue;
+      }
+      String name = tsClass.name;
+      if (name.contains("$")) {
+        String[] split = name.split("\\$");
+        name = split[split.length - 1];
+      }
+      string
+          .append("Exports.")
+          .append(name)
+          .append(" = _G['")
+          .append(name)
+          .append("']\n");
+    }
+
+    string.append("-- [PARTIAL:STOP]\n\nreturn Exports\n");
+
+    writer = new FileWriter(new File(generatedDir, "class_vars.lua"));
+    writer.write(string.toString());
+    writer.flush();
+    writer.close();
   }
 
   private static void generateGlobalAPI() throws IOException {
@@ -219,47 +269,7 @@ public class ZomboidGenerator {
     writer.close();
   }
 
-  // Fix for LWJGL environment-required classes.
-  public static void generateNativeClassReferences(List<Class<?>> classes) throws IOException {
-    StringBuilder string = new StringBuilder();
-    string.append("import { fmod, gnu, java, org, se, zombie } from \"./java\";\n\n");
-    string.append("// [PARTIAL:START]\n");
-
-    List<String> known = new ArrayList<>();
-    for (Class<?> clazz : classes) {
-      if (known.contains(clazz.getSimpleName())) continue;
-      else known.add(clazz.getSimpleName());
-
-      String classPath = clazz.getName().replace("function", "_function");
-      String className = clazz.getSimpleName();
-
-      TypeVariable<?>[] vars = clazz.getTypeParameters();
-      StringBuilder varsName = new StringBuilder();
-      if (vars.length != 0) {
-        varsName.append("<");
-        for (TypeVariable<?> var : vars) {
-          varsName.append("any, ");
-        }
-        varsName = new StringBuilder(varsName.substring(0, varsName.length() - 2) + ">");
-      }
-
-      string
-          .append("export const ")
-          .append(className)
-          .append(": ")
-          .append(classPath)
-          .append(varsName)
-          .append(";\n");
-    }
-
-    string.append("// [PARTIAL:STOP]\n");
-    // Commented to prevent overwriting.
-    FileWriter writer = new FileWriter(new File(generatedDir, "class_vars.d.ts"));
-    writer.write(string.toString());
-    writer.flush();
-    writer.close();
-  }
-
+  /** Fix for LWJGL environment-required classes. */
   private static void init() {
     // Setup an error callback. The default implementation
     // will print the error message in System.err.

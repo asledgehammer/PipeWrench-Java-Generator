@@ -42,4 +42,8 @@ public class TypeScriptCompiler {
   public List<Class<?>> getAllKnownClasses() {
     return graph.getAllKnownClasses();
   }
+
+  public List<TypeScriptElement> getAllGeneratedElements() {
+    return graph.getAllGeneratedElements();
+  }
 }

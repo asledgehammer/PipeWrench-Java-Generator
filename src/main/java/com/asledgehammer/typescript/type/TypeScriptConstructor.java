@@ -7,6 +7,7 @@ import com.asledgehammer.typescript.util.DocBuilder;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -120,8 +121,20 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
 
     StringBuilder builder = new StringBuilder();
     builder.append(walkDocs(prefix)).append('\n');
-    builder.append(prefix).append("static new(");
+    builder.append(prefix).append("static new");
 
+    String genericParamsBody = "";
+    TypeVariable<?>[] genericTypes = element.clazz.getTypeParameters();
+    if (genericTypes.length != 0) {
+      genericParamsBody = "<";
+      for (TypeVariable<?> variable : genericTypes) {
+        genericParamsBody += variable.getTypeName() + ", ";
+      }
+      genericParamsBody = genericParamsBody.substring(0, genericParamsBody.length() - 2) + '>';
+      builder.append(genericParamsBody);
+    }
+
+    builder.append('(');
     String s = "";
     for (int i = 0; i < allParameterTypes.size(); i++) {
       List<String> argSlot = allParameterTypes.get(i);
@@ -138,7 +151,7 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
 
     if (s.length() != 0) s = s.substring(0, s.length() - 2);
 
-    builder.append(s).append("): ").append(clazz.getName()).append(";");
+    builder.append(s).append("): ").append(clazz.getName()).append(genericParamsBody).append(";");
     return builder.toString();
   }
 }

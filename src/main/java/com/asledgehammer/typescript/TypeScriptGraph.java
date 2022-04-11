@@ -134,6 +134,14 @@ public class TypeScriptGraph {
     return list;
   }
 
+  public List<TypeScriptElement> getAllGeneratedElements() {
+    List<TypeScriptElement> list = new ArrayList<>();
+    for (TypeScriptNamespace namespace : namespaces.values()) {
+      list.addAll(namespace.getAllGeneratedElements());
+    }
+    return list;
+  }
+
   public TypeScriptElement resolve(String path) {
 
     if (path.trim().isEmpty()) {

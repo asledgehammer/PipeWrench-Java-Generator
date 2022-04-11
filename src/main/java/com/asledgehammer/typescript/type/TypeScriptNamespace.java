@@ -9,7 +9,7 @@ public class TypeScriptNamespace
     implements TypeScriptResolvable, TypeScriptWalkable, TypeScriptCompilable {
 
   private final Map<String, TypeScriptNamespace> namespaces = new HashMap<>();
-  private final Map<String, TypeScriptElement> elements = new HashMap<>();
+  public final Map<String, TypeScriptElement> elements = new HashMap<>();
   private final TypeScriptNamespace parent;
   private final TypeScriptGraph graph;
   private final String path;
@@ -218,6 +218,15 @@ public class TypeScriptNamespace
         list.add(element.getClazz());
       }
     }
+    return list;
+  }
+
+  public List<TypeScriptElement> getAllGeneratedElements() {
+    List<TypeScriptElement> list = new ArrayList<>();
+    for (TypeScriptNamespace namespace : namespaces.values()) {
+      list.addAll(namespace.getAllGeneratedElements());
+    }
+    list.addAll(elements.values());
     return list;
   }
 }

@@ -14,7 +14,7 @@ public abstract class TypeScriptElement
   protected final TypeScriptNamespace namespace;
   protected final Class<?> clazz;
   final ComplexGenericMap genericMap;
-  protected String name;
+  public String name;
   protected boolean walked = false;
 
   protected TypeScriptElement(TypeScriptNamespace namespace, Class<?> clazz) {
@@ -100,18 +100,12 @@ public abstract class TypeScriptElement
     }
 
     throw new RuntimeException();
-    //    return new TypeScriptType(namespace, name);
-    //    throw new IllegalArgumentException("Java Element does not exist: " +
-    // enclosingClazz.getName() + "$" + name);
   }
 
   public static TypeScriptElement resolve(TypeScriptNamespace namespace, Class<?> clazz) {
     if (clazz.isEnum()) {
       return new TypeScriptEnum(namespace, clazz);
     }
-    //    else if (clazz.isInterface()) {
-    //      return new TypeScriptInterface(namespace, clazz);
-    //    }
     return new TypeScriptClass(namespace, clazz);
   }
 
@@ -187,7 +181,6 @@ public abstract class TypeScriptElement
     } else {
       try {
         String forName = string.replace("._function", ".function");
-        //        System.out.println("ForName: " + string);
         Class<?> cl = Class.forName(forName);
         graph.add(cl);
       } catch (Exception ignored) {
@@ -198,10 +191,6 @@ public abstract class TypeScriptElement
       string += "[]";
       arrayDimCount--;
     }
-
-    //    if (!original.equals(string)) {
-    //      System.out.println("inspect: " + original + " -> " + string);
-    //    }
 
     return string;
   }
@@ -236,8 +225,6 @@ public abstract class TypeScriptElement
   }
 
   public boolean isValid() {
-    //    boolean isValid = clazz != null || this instanceof TypeScriptType;
-    //    if (!isValid) System.out.println("INVALID ELEMENT: " + name);
     return true;
   }
 
