@@ -3,32 +3,56 @@ package test;
 import com.asledgehammer.typescript.TypeScriptCompiler;
 import com.asledgehammer.typescript.settings.TypeScriptSettings;
 import com.asledgehammer.typescript.type.TypeScriptClass;
-import com.asledgehammer.typescript.type.TypeScriptElement;
-import zombie.util.list.PZArrayList;
+import com.asledgehammer.typescript.type.TypeScriptMethod;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 public class TestClass {
 
   public static void main(String[] args) {
+    //    TypeScriptCompiler compiler = new TypeScriptCompiler(new TypeScriptSettings());
+    //    compiler.add(ExampleClass.class);
+    //    compiler.add(BodyPartType.class);
+    //    compiler.walk();
+    //
+    //    String compiled = compiler.compile();
+    //    compiled += '\n';
+    //
+    //    List<TypeScriptElement> elements = compiler.getAllGeneratedElements();
+    //    for (TypeScriptElement element : elements) {
+    //      if (element instanceof TypeScriptClass tsClass) {
+    //        compiled += tsClass.compileStaticOnly("") + "\n\n";
+    //      } else if (element instanceof TypeScriptEnum tsEnum) {
+    //        compiled += tsEnum.compileStaticOnly("") + "\n\n";
+    //      }
+    //    }
+    //
+    //    System.out.println("\n\n\nRESULT: ");
+    //    System.out.println(compiled);
+
     TypeScriptCompiler compiler = new TypeScriptCompiler(new TypeScriptSettings());
     compiler.add(ExampleClass.class);
-    compiler.add(PZArrayList.class);
     compiler.walk();
 
-    String compiled = compiler.compile();
-    compiled += '\n';
+    TypeScriptClass globalObject = (TypeScriptClass) compiler.resolve(ExampleClass.class);
+    Map<String, List<TypeScriptMethod>> methods = globalObject.getMethods();
+    List<String> methodNames = new ArrayList<>(methods.keySet());
+    methodNames.sort(Comparator.naturalOrder());
 
-    List<TypeScriptElement> elements = compiler.getAllGeneratedElements();
-    for (TypeScriptElement element : elements) {
-      if (!(element instanceof TypeScriptClass tsClass)) {
-        continue;
+    StringBuilder builder = new StringBuilder();
+    for (String methodName : methodNames) {
+      List<TypeScriptMethod> methodsList = methods.get(methodName);
+      for (TypeScriptMethod method : methodsList) {
+        if (method.isStatic()) {
+          builder.append(method.compileTypeScriptFunction("")).append('\n');
+        }
       }
-      compiled += tsClass.compileStaticOnly("") + "\n\n";
     }
 
-    System.out.println("\n\n\nRESULT: ");
-    System.out.println(compiled);
+    System.out.println(builder);
   }
 }
 

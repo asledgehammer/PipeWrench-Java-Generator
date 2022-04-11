@@ -5,6 +5,7 @@ import com.asledgehammer.typescript.settings.Recursion;
 import com.asledgehammer.typescript.settings.TypeScriptSettings;
 import com.asledgehammer.typescript.type.TypeScriptClass;
 import com.asledgehammer.typescript.type.TypeScriptElement;
+import com.asledgehammer.typescript.type.TypeScriptEnum;
 import com.asledgehammer.typescript.type.TypeScriptMethod;
 import fmod.fmod.EmitterType;
 import fmod.fmod.FMODAudio;
@@ -190,10 +191,11 @@ public class ZomboidGenerator {
     string.append("// [PARTIAL:START]\n");
 
     for (TypeScriptElement element : elements) {
-      if (!(element instanceof TypeScriptClass tsClass)) {
-        continue;
+      if (element instanceof TypeScriptClass tsClass) {
+        string.append(tsClass.compileStaticOnly("")).append("\n\n");
+      } else if (element instanceof TypeScriptEnum tsEnum) {
+        string.append(tsEnum.compileStaticOnly("")).append("\n\n");
       }
-      string.append(tsClass.compileStaticOnly("")).append("\n\n");
     }
 
     string.append("// [PARTIAL:STOP]\n");
@@ -207,20 +209,14 @@ public class ZomboidGenerator {
     string.append("local Exports = {}\n\n-- [PARTIAL:START]\n");
 
     for (TypeScriptElement element : elements) {
-      if (!(element instanceof TypeScriptClass tsClass)) {
-        continue;
+      if (element instanceof TypeScriptClass || element instanceof TypeScriptEnum) {
+        String name = element.name;
+        if (name.contains("$")) {
+          String[] split = name.split("\\$");
+          name = split[split.length - 1];
+        }
+        string.append("Exports.").append(name).append(" = loadstring(\"return _G['").append(name).append("']\")();\n");
       }
-      String name = tsClass.name;
-      if (name.contains("$")) {
-        String[] split = name.split("\\$");
-        name = split[split.length - 1];
-      }
-      string
-          .append("Exports.")
-          .append(name)
-          .append(" = _G['")
-          .append(name)
-          .append("']\n");
     }
 
     string.append("-- [PARTIAL:STOP]\n\nreturn Exports\n");
@@ -253,7 +249,9 @@ public class ZomboidGenerator {
     for (String methodName : methodNames) {
       List<TypeScriptMethod> methodsList = methods.get(methodName);
       for (TypeScriptMethod method : methodsList) {
-        writer.write("export function " + method.compile("") + '\n');
+        if (method.isStatic()) {
+          writer.write(method.compileTypeScriptFunction("") + '\n');
+        }
       }
     }
 

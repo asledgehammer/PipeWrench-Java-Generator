@@ -103,9 +103,7 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
     ComplexGenericMap genericMap = container.genericMap;
 
     DocBuilder doc = new DocBuilder();
-    if (bStatic) {
-      doc.appendLine("@noSelf");
-    }
+    if (bStatic) doc.appendLine("@noSelf");
     if (parameters.length != 0) {
       if (!doc.isEmpty()) {
         doc.appendLine();
@@ -158,17 +156,48 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
     return builder.toString();
   }
 
-  private String compileTypeScriptFunction(String prefix) {
+  public String compileTypeScriptFunction(String prefix) {
+    StringBuilder builder = new StringBuilder();
+
+    DocBuilder doc = new DocBuilder();
+    if (bStatic) doc.appendLine("@noSelf");
+    if (!parameters.isEmpty()) {
+      if (!doc.isEmpty()) doc.appendLine();
+      String compiled = "(";
+
+      ComplexGenericMap genericMap = container.genericMap;
+      Parameter[] parameters = method.getParameters();
+      for (Parameter parameter : parameters) {
+        String tName = parameter.getType().getSimpleName() + " " + parameter.getName();
+        if (genericMap != null) {
+          tName = ClazzUtils.walkTypesRecursively(genericMap, container.clazz, tName);
+        }
+        tName = TypeScriptElement.adaptType(tName);
+        tName = TypeScriptElement.inspect(container.namespace.getGraph(), tName);
+        compiled += tName + ", ";
+      }
+      compiled =
+          compiled.substring(0, compiled.length() - 2)
+              + "): "
+              + method.getReturnType().getSimpleName();
+
+      doc.appendLine(compiled);
+    }
+
+    if (!doc.isEmpty()) {
+      builder.append(doc.build(prefix)).append('\n');
+    }
     String compiled = "export function " + method.getName() + "(";
 
     if (!parameters.isEmpty()) {
+      compiled += "this: void, ";
       for (TypeScriptMethodParameter parameter : parameters) {
         compiled += parameter.compile("") + ", ";
       }
       compiled = compiled.substring(0, compiled.length() - 2);
     }
     compiled += "): " + returnType;
-    return compiled;
+    return builder.append(compiled).toString();
   }
 
   public String compileLua(String table) {

@@ -35,7 +35,7 @@ public class TypeScriptClass extends TypeScriptElement {
     constructor.walk(graph);
   }
 
-  private void checkDuplicateFieldMethods(TypeScriptGraph graph) {
+  private void checkDuplicateFieldMethods(TypeScriptGraph ignored) {
     List<String> names = new ArrayList<>(fields.keySet());
     for (String fieldName : names) {
       if (methods.containsKey(fieldName)) {
@@ -56,9 +56,10 @@ public class TypeScriptClass extends TypeScriptElement {
 
   private void walkGenericParameters(TypeScriptGraph graph) {
     genericParameters.clear();
-    TypeVariable[] params = clazz.getTypeParameters();
+    if (clazz == null) return;
+    TypeVariable<?>[] params = clazz.getTypeParameters();
 
-    for (TypeVariable param : params) {
+    for (TypeVariable<?> param : params) {
       TypeScriptGeneric generic = new TypeScriptGeneric(param);
       genericParameters.add(generic);
     }
@@ -106,15 +107,13 @@ public class TypeScriptClass extends TypeScriptElement {
 
     StringBuilder stringBuilder = new StringBuilder(prefixOriginal);
     stringBuilder.append("// ").append(name);
-    if (clazz != null) {
-      Type genericSuperclass = clazz.getGenericSuperclass();
-      if (genericSuperclass != null) {
-        stringBuilder.append(" extends ").append(clazz.getGenericSuperclass().getTypeName());
-      } else {
-        Class<?> superClazz = clazz.getSuperclass();
-        if (superClazz != null) {
-          stringBuilder.append(" extends ").append(superClazz.getName());
-        }
+    Type genericSuperclass = clazz.getGenericSuperclass();
+    if (genericSuperclass != null) {
+      stringBuilder.append(" extends ").append(clazz.getGenericSuperclass().getTypeName());
+    } else {
+      Class<?> superClazz = clazz.getSuperclass();
+      if (superClazz != null) {
+        stringBuilder.append(" extends ").append(superClazz.getName());
       }
     }
 
@@ -152,6 +151,8 @@ public class TypeScriptClass extends TypeScriptElement {
       }
     }
 
+    if (stringBuilder.toString().endsWith("\n"))
+      stringBuilder.setLength(stringBuilder.length() - 1);
     stringBuilder.append(prefixOriginal).append("}");
     return stringBuilder.toString();
   }
@@ -201,13 +202,7 @@ public class TypeScriptClass extends TypeScriptElement {
       stringBuilder.append('\n');
     }
 
-    //    if (constructor.exists) {
-    //      stringBuilder.append(constructor.compile(prefix)).append("\n\n");
-    //    } else {
-    //    if (namespace.getGraph().getCompiler().getSettings().readOnly) {
     stringBuilder.append(prefix).append("private constructor();\n\n");
-    //    }
-    //    }
 
     if (!methods.isEmpty()) {
       List<String> names = new ArrayList<>(methods.keySet());
@@ -222,6 +217,8 @@ public class TypeScriptClass extends TypeScriptElement {
       }
     }
 
+    if (stringBuilder.toString().endsWith("\n"))
+      stringBuilder.setLength(stringBuilder.length() - 1);
     stringBuilder.append(prefixOriginal).append("}");
     return stringBuilder.toString();
   }
