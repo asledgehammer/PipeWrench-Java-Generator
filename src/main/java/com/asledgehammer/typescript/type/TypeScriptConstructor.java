@@ -15,6 +15,8 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
 
   private final List<List<String>> allParameterTypes = new ArrayList<>();
   private final List<List<Parameter>> allParameters = new ArrayList<>();
+  private final List<List<Boolean>> canPassNull = new ArrayList<>();
+  private final List<List<Boolean>> isVararg = new ArrayList<>();
   private final TypeScriptElement element;
   public boolean exists = false;
   private int minParamCount = Integer.MAX_VALUE;
@@ -79,7 +81,25 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
             allParameters.add(argSlot);
           }
 
+          List<Boolean> nullSlot;
+          if (canPassNull.size() > i) {
+            nullSlot = canPassNull.get(i);
+          } else {
+            nullSlot = new ArrayList<>();
+            canPassNull.add(nullSlot);
+          }
+
+          List<Boolean> varg;
+          if (isVararg.size() > i) {
+            varg = isVararg.get(i);
+          } else {
+            varg = new ArrayList<>();
+            isVararg.add(varg);
+          }
+
           argSlot.add(argParameter);
+          nullSlot.add(argParameter.getType().isPrimitive());
+          varg.add(argParameter.isVarArgs());
         }
       }
     }
@@ -97,7 +117,12 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
       if (parameters.length != 0) {
         String compiled = "(";
         for (Parameter parameter : constructor.getParameters()) {
-          String tName = parameter.getType().getSimpleName() + " " + parameter.getName();
+          String tName =
+              (parameter.isVarArgs()
+                      ? parameter.getType().getComponentType().getSimpleName() + "..."
+                      : parameter.getType().getSimpleName())
+                  + " "
+                  + parameter.getName();
           if (element.genericMap != null) {
             tName = ClazzUtils.walkTypesRecursively(element.genericMap, element.clazz, tName);
           }
@@ -137,16 +162,30 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
     builder.append('(');
     String s = "";
     for (int i = 0; i < allParameterTypes.size(); i++) {
-      List<String> argSlot = allParameterTypes.get(i);
 
       String sEntry = "arg" + i;
       if (i > minParamCount - 1) sEntry += '?';
       sEntry += ": ";
 
+      String sParams = "";
+      List<String> argSlot = allParameterTypes.get(i);
       for (String argSlotEntry : argSlot) {
-        sEntry += argSlotEntry + " | ";
+        sParams += argSlotEntry + " | ";
       }
-      s += sEntry.substring(0, sEntry.length() - 3) + ", ";
+
+      s += sEntry + sParams.substring(0, sParams.length() - 3);
+
+      boolean isPrimitive = false;
+      List<Boolean> paramPrimitiveList = canPassNull.get(i);
+      for (Boolean aBoolean : paramPrimitiveList) {
+        if (aBoolean) {
+          isPrimitive = true;
+          break;
+        }
+      }
+      if (!isPrimitive) s += " | null";
+
+      s += ", ";
     }
 
     if (s.length() != 0) s = s.substring(0, s.length() - 2);

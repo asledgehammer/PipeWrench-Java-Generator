@@ -32,7 +32,6 @@ public class ZomboidStitcher {
     writer.write("return Exports\n");
     writer.flush();
     writer.close();
-    System.out.println("###AAAA##");
   }
 
   public static void stitchTypeScript() throws IOException {

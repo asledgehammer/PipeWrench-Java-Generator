@@ -155,7 +155,6 @@ public class ClazzUtils {
       ComplexGenericMap genericMap, Class<?> declClazz, String s) {
 
     int indexOf = s.indexOf('<');
-    if (indexOf != -1) System.out.println("INDEX " + indexOf + "\t" + s);
     String rootString = indexOf != -1 ? s.substring(0, indexOf) : s;
 
     s = s.replaceAll("\\? extends ", "").replaceAll("\\? super ", "").replaceAll("capture of ", "");
@@ -187,12 +186,7 @@ public class ClazzUtils {
       rootString = genericMap.resolveDeclaredType(declClazz, rootString);
     }
 
-    if (hasNestedArgs) System.out.println("\t" + rootString + "\t" + nestedArgsString);
-
     String result = rootString + nestedArgsString;
-    //      if (!s.equals(result)) {
-    //        System.out.println(s + " => " + rootString);
-    //      }
 
     result = result.replaceAll("null", "java.lang.Object");
 

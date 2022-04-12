@@ -18,6 +18,7 @@ public class TypeScriptEnum extends TypeScriptElement implements TypeScriptCompi
 
   @Override
   public void walk(TypeScriptGraph graph) {
+    if(walked) return;
     System.out.println("Walking " + getName());
     walkFields(graph);
     walkMethods(graph);

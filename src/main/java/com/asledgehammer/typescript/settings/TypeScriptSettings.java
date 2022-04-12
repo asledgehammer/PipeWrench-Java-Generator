@@ -1,8 +1,20 @@
 package com.asledgehammer.typescript.settings;
 
-public class TypeScriptSettings {
-    public Recursion recursion = Recursion.NONE;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
-    /** If all classes should have private constructors. */
-    public boolean readOnly = false;
+public class TypeScriptSettings {
+  public final List<Method> methodsBlackList = new ArrayList<>();
+  public final List<String> methodsBlackListByPath = new ArrayList<>();
+  public Recursion recursion = Recursion.NONE;
+
+  public boolean isBlackListed(Method method) {
+    if (methodsBlackList.contains(method)) return true;
+    String methodPath = method.getDeclaringClass().getName() + '#' + method.getName();
+    return methodsBlackListByPath.contains(methodPath);
+  }
+
+  /** If all classes should have private constructors. */
+  public boolean readOnly = false;
 }

@@ -1,6 +1,7 @@
 package com.asledgehammer.typescript.type;
 
 import com.asledgehammer.typescript.TypeScriptGraph;
+import com.asledgehammer.typescript.settings.TypeScriptSettings;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -40,7 +41,7 @@ public class TypeScriptClass extends TypeScriptElement {
     for (String fieldName : names) {
       if (methods.containsKey(fieldName)) {
         System.out.println(
-            "(Class " + this.name + ") -> Removing duplicate field as function: " + fieldName);
+            "[" + this.name + "]: Removing duplicate field as function: " + fieldName);
         fields.remove(fieldName);
       }
     }
@@ -83,7 +84,10 @@ public class TypeScriptClass extends TypeScriptElement {
   private void walkMethods(TypeScriptGraph graph) {
     if (clazz == null) return;
     methods.clear();
+
+    TypeScriptSettings settings = namespace.getGraph().getCompiler().getSettings();
     for (Method method : clazz.getMethods()) {
+      if (settings.isBlackListed(method)) continue;
       if (Modifier.isPublic(method.getModifiers())) {
         List<TypeScriptMethod> ms =
             methods.computeIfAbsent(method.getName(), s -> new ArrayList<>());
@@ -106,7 +110,19 @@ public class TypeScriptClass extends TypeScriptElement {
     }
 
     StringBuilder stringBuilder = new StringBuilder(prefixOriginal);
-    stringBuilder.append("// ").append(name);
+    stringBuilder.append("// ");
+
+    if (clazz.isInterface()) {
+      stringBuilder.append("[INTERFACE] ");
+    } else {
+      stringBuilder.append("[");
+      if (Modifier.isAbstract(clazz.getModifiers())) {
+        stringBuilder.append("ABSTRACT ");
+      }
+      stringBuilder.append("CLASS] ");
+    }
+
+    stringBuilder.append(name);
     Type genericSuperclass = clazz.getGenericSuperclass();
     if (genericSuperclass != null) {
       stringBuilder.append(" extends ").append(clazz.getGenericSuperclass().getTypeName());

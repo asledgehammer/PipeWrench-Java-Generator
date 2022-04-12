@@ -76,7 +76,6 @@ public class TypeScriptGraph {
     walking = true;
 
     do {
-      System.out.println("Walk: Cycle " + cycle++);
       addedWhileWalking = false;
       for (TypeScriptNamespace namespace : new ArrayList<>(namespaces.values())) {
         namespace.walk(this);

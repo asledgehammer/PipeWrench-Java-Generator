@@ -160,6 +160,13 @@ public class ZomboidGenerator {
 
   private static void generateJava() throws IOException {
     TypeScriptSettings settings = new TypeScriptSettings();
+    settings.methodsBlackListByPath.add("java.lang.Object#equals");
+    settings.methodsBlackListByPath.add("java.lang.Object#getClass");
+    settings.methodsBlackListByPath.add("java.lang.Object#hashCode");
+    settings.methodsBlackListByPath.add("java.lang.Object#notify");
+    settings.methodsBlackListByPath.add("java.lang.Object#notifyAll");
+    settings.methodsBlackListByPath.add("java.lang.Object#toString");
+    settings.methodsBlackListByPath.add("java.lang.Object#wait");
     settings.recursion = Recursion.NONE;
     settings.readOnly = true;
 
@@ -190,7 +197,39 @@ public class ZomboidGenerator {
     string.append("import { fmod, gnu, java, org, se, zombie } from \"./java\";\n\n");
     string.append("// [PARTIAL:START]\n");
 
-    for (TypeScriptElement element : elements) {
+    List<String> knownNames = new ArrayList<>();
+    List<TypeScriptElement> prunedElements = new ArrayList<>();
+    for (int index = elements.size() - 1; index >= 0; index--) {
+      TypeScriptElement element = elements.get(index);
+      Class<?> clazz = element.getClazz();
+      if(clazz == null) continue;
+      String name = clazz.getSimpleName();
+      if (name.contains("$")) {
+        String[] split = name.split("\\$");
+        name = split[split.length - 1];
+      }
+      if (!knownNames.contains(name)) {
+        prunedElements.add(element);
+        knownNames.add(name);
+      }
+    }
+
+    prunedElements.sort(
+        (o1, o2) -> {
+          String name1 = o1.getClazz().getSimpleName();
+          if (name1.contains("$")) {
+            String[] split = name1.split("\\$");
+            name1 = split[split.length - 1];
+          }
+          String name2 = o2.getClazz().getSimpleName();
+          if (name2.contains("$")) {
+            String[] split = name2.split("\\$");
+            name2 = split[split.length - 1];
+          }
+          return name1.compareTo(name2);
+        });
+
+    for (TypeScriptElement element : prunedElements) {
       if (element instanceof TypeScriptClass tsClass) {
         string.append(tsClass.compileStaticOnly("")).append("\n\n");
       } else if (element instanceof TypeScriptEnum tsEnum) {
@@ -215,7 +254,12 @@ public class ZomboidGenerator {
           String[] split = name.split("\\$");
           name = split[split.length - 1];
         }
-        string.append("Exports.").append(name).append(" = loadstring(\"return _G['").append(name).append("']\")();\n");
+        string
+            .append("Exports.")
+            .append(name)
+            .append(" = loadstring(\"return _G['")
+            .append(name)
+            .append("']\")();\n");
       }
     }
 

@@ -110,7 +110,12 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
       }
       String compiled = "(";
       for (Parameter parameter : parameters) {
-        String tName = parameter.getType().getSimpleName() + " " + parameter.getName();
+        String tName =
+            (parameter.isVarArgs()
+                    ? parameter.getType().getComponentType().getSimpleName() + "..."
+                    : parameter.getType().getSimpleName())
+                + " "
+                + parameter.getName();
         if (genericMap != null) {
           tName = ClazzUtils.walkTypesRecursively(genericMap, container.clazz, tName);
         }
@@ -168,7 +173,12 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
       ComplexGenericMap genericMap = container.genericMap;
       Parameter[] parameters = method.getParameters();
       for (Parameter parameter : parameters) {
-        String tName = parameter.getType().getSimpleName() + " " + parameter.getName();
+        String tName =
+            (parameter.isVarArgs()
+                    ? parameter.getType().getComponentType().getSimpleName() + "..."
+                    : parameter.getType().getSimpleName())
+                + " "
+                + parameter.getName();
         if (genericMap != null) {
           tName = ClazzUtils.walkTypesRecursively(genericMap, container.clazz, tName);
         }
@@ -261,10 +271,6 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
         Class<?> declClazz = method.method.getDeclaringClass();
         String before = type.getTypeName();
         this.returnType = ClazzUtils.walkTypesRecursively(genericMap, declClazz, before);
-
-        if (this.method.container.clazz.getSimpleName().equals("ItemVisuals")) {
-          System.out.println("FINAL: " + before + " => " + this.returnType);
-        }
       } else {
         this.returnType = type.getTypeName();
       }
@@ -286,12 +292,17 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
         }
       }
 
+      if (!parameter.getType().isPrimitive()) {
+        returnType += " | null";
+      }
+
       walked = true;
     }
 
     @Override
     public String compile(String prefix) {
-      return name + ": " + returnType;
+      String name = this.name;
+      return name + (parameter.isVarArgs() ? "?" : "") + ": " + returnType;
     }
 
     public boolean hasWalked() {
