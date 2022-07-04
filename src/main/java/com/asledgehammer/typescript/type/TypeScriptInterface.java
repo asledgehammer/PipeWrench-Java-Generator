@@ -44,7 +44,7 @@ public class TypeScriptInterface extends TypeScriptElement {
 
   private void walkFields(TypeScriptGraph graph) {
     if (clazz == null) return;
-    for (Field field : clazz.getFields()) {
+    for (Field field : clazz.getDeclaredFields()) {
       fields.put(field.getName(), new TypeScriptField(this, field));
     }
     for (TypeScriptField field : fields.values()) field.walk(graph);
@@ -52,7 +52,7 @@ public class TypeScriptInterface extends TypeScriptElement {
 
   private void walkMethods(TypeScriptGraph graph) {
     if (clazz == null) return;
-    for (Method method : clazz.getMethods()) {
+    for (Method method : clazz.getDeclaredMethods()) {
       methods.put(method.getName(), new TypeScriptMethod(this, method));
     }
     for (TypeScriptMethod method : methods.values()) method.walk(graph);

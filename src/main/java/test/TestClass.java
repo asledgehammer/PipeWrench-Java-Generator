@@ -6,6 +6,7 @@ import com.asledgehammer.typescript.type.TypeScriptClass;
 import com.asledgehammer.typescript.type.TypeScriptElement;
 import com.asledgehammer.typescript.type.TypeScriptEnum;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class TestClass {
@@ -28,14 +29,14 @@ public class TestClass {
     String compiled = compiler.compile();
     compiled += '\n';
 
-    List<TypeScriptElement> elements = compiler.getAllGeneratedElements();
-    for (TypeScriptElement element : elements) {
-      if (element instanceof TypeScriptClass tsClass) {
-        compiled += tsClass.compileStaticOnly("") + "\n\n";
-      } else if (element instanceof TypeScriptEnum tsEnum) {
-        compiled += tsEnum.compileStaticOnly("") + "\n\n";
-      }
-    }
+//    List<TypeScriptElement> elements = compiler.getAllGeneratedElements();
+//    for (TypeScriptElement element : elements) {
+//      if (element instanceof TypeScriptClass tsClass) {
+//        compiled += tsClass.compileStaticOnly("") + "\n\n";
+//      } else if (element instanceof TypeScriptEnum tsEnum) {
+//        compiled += tsEnum.compileStaticOnly("") + "\n\n";
+//      }
+//    }
 
     System.out.println("\n\n\nRESULT: ");
     System.out.println(compiled);
@@ -71,7 +72,7 @@ class ExampleClass<K, V> {
   public K key;
   public V value;
 
-  //  public ExampleClass() {}
+  public ExampleClass() {}
 
   public ExampleClass(String arg0, Integer... arg1) {}
 

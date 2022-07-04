@@ -3,10 +3,7 @@ package test;
 import com.asledgehammer.typescript.TypeScriptCompiler;
 import com.asledgehammer.typescript.settings.Recursion;
 import com.asledgehammer.typescript.settings.TypeScriptSettings;
-import com.asledgehammer.typescript.type.TypeScriptClass;
-import com.asledgehammer.typescript.type.TypeScriptElement;
-import com.asledgehammer.typescript.type.TypeScriptEnum;
-import com.asledgehammer.typescript.type.TypeScriptMethod;
+import com.asledgehammer.typescript.type.*;
 import fmod.fmod.EmitterType;
 import fmod.fmod.FMODAudio;
 import fmod.fmod.FMODSoundBank;
@@ -231,7 +228,7 @@ public class ZomboidGenerator {
 
     for (TypeScriptElement element : prunedElements) {
       if (element instanceof TypeScriptClass tsClass) {
-        string.append(tsClass.compileStaticOnly("")).append("\n\n");
+//        string.append(tsClass.compileStaticOnly("")).append("\n\n");
       } else if (element instanceof TypeScriptEnum tsEnum) {
         string.append(tsEnum.compileStaticOnly("")).append("\n\n");
       }
@@ -286,14 +283,14 @@ public class ZomboidGenerator {
     TypeScriptClass globalObject =
         (TypeScriptClass) compiler.resolve(LuaManager.GlobalObject.class);
 
-    Map<String, List<TypeScriptMethod>> methods = globalObject.getMethods();
+    Map<String, List<TypeScriptMethodCluster>> methods = globalObject.getMethods();
     List<String> methodNames = new ArrayList<>(methods.keySet());
     methodNames.sort(Comparator.naturalOrder());
 
     for (String methodName : methodNames) {
-      List<TypeScriptMethod> methodsList = methods.get(methodName);
-      for (TypeScriptMethod method : methodsList) {
-        if (method.isStatic()) {
+      List<TypeScriptMethodCluster> methodsList = methods.get(methodName);
+      for (TypeScriptMethodCluster method : methodsList) {
+        if (method.isStatic) {
           writer.write(method.compileTypeScriptFunction("") + '\n');
         }
       }
