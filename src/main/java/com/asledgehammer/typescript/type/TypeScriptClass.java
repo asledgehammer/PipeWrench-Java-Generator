@@ -99,7 +99,7 @@ public class TypeScriptClass extends TypeScriptElement {
     methods.clear();
 
     TypeScriptSettings settings = namespace.getGraph().getCompiler().getSettings();
-    for (Method method : clazz.getDeclaredMethods()) {
+    for (Method method : clazz.getMethods()) {
       if (settings.isBlackListed(method)) continue;
       if (!Modifier.isPublic(method.getModifiers())) continue;
 
@@ -247,14 +247,14 @@ public class TypeScriptClass extends TypeScriptElement {
     }
     stringBuilder.append(compiledParams);
 
-    if (superClazz != null && !superClazz.equals(Object.class)) {
-      stringBuilder.append(" extends ").append(superClazz.getName());
-    } else if (clazz.isInterface()) {
-      Class<?>[] interfaces = clazz.getInterfaces();
-      if (interfaces.length == 1) {
-        stringBuilder.append(" extends ").append(interfaces[0].getName());
-      }
-    }
+//    if (superClazz != null && !superClazz.equals(Object.class)) {
+//      stringBuilder.append(" extends ").append(superClazz.getName());
+//    } else if (clazz.isInterface()) {
+//      Class<?>[] interfaces = clazz.getInterfaces();
+//      if (interfaces.length == 1) {
+//        stringBuilder.append(" extends ").append(interfaces[0].getName());
+//      }
+//    }
 
     stringBuilder.append(" {\n");
 

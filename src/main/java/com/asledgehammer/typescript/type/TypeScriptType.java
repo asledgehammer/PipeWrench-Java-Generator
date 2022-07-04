@@ -1,8 +1,6 @@
 package com.asledgehammer.typescript.type;
 
 import com.asledgehammer.typescript.TypeScriptGraph;
-
-import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,43 +17,12 @@ public class TypeScriptType extends TypeScriptElement {
   }
 
   @Override
-  public String compile(String prefix) {
-    String compiled = prefix + "// " + (clazz != null ? clazz.getName() : "(Unknown)");
-
-    if (clazz != null) {
-      Type genericSuperclass = clazz.getGenericSuperclass();
-      if (genericSuperclass != null && !genericSuperclass.equals(Object.class)) {
-        compiled += " extends " + clazz.getGenericSuperclass().getTypeName();
-      } else {
-        Class<?> superClazz = clazz.getSuperclass();
-        if (superClazz != null && !superClazz.equals(Object.class)) {
-          compiled += " extends " + superClazz.getName();
-        }
-      }
-    }
-
-    compiled += '\n';
-    compiled += prefix + "export type " + name;
-    if (!genericParameters.isEmpty()) {
-      compiled += '<';
-
-      for (TypeScriptGeneric param : genericParameters) {
-        compiled += param.compile("") + ", ";
-      }
-      compiled = compiled.substring(0, compiled.length() - 2) + '>';
-    }
-
-    compiled += " = any;";
-    return compiled;
-  }
-
-  @Override
   public void walk(TypeScriptGraph graph) {
     if (clazz != null) {
       genericParameters.clear();
-      TypeVariable[] params = clazz.getTypeParameters();
+      TypeVariable<?>[] params = clazz.getTypeParameters();
 
-      for (TypeVariable param : params) {
+      for (TypeVariable<?> param : params) {
         TypeScriptGeneric generic = new TypeScriptGeneric(param);
         genericParameters.add(generic);
       }
@@ -65,5 +32,20 @@ public class TypeScriptType extends TypeScriptElement {
       }
     }
     this.walked = true;
+  }
+
+  @Override
+  public String compile(String prefix) {
+    StringBuilder compiled = new StringBuilder(prefix);
+    compiled.append(prefix).append("export type ").append(name);
+    if (!genericParameters.isEmpty()) {
+      compiled.append('<');
+      for (TypeScriptGeneric param : genericParameters) {
+        compiled.append(param.compile("")).append(", ");
+      }
+      compiled = new StringBuilder(compiled.substring(0, compiled.length() - 2) + '>');
+    }
+    compiled.append(" = any;");
+    return compiled.toString();
   }
 }
