@@ -6,12 +6,14 @@ import com.asledgehammer.typescript.type.TypeScriptClass;
 import com.asledgehammer.typescript.type.TypeScriptElement;
 import com.asledgehammer.typescript.type.TypeScriptEnum;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
 public class TestClass {
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws IOException {
 
     TypeScriptSettings settings = new TypeScriptSettings();
     settings.methodsBlackListByPath.add("java.lang.Object#equals");
@@ -40,6 +42,11 @@ public class TestClass {
 
     System.out.println("\n\n\nRESULT: ");
     System.out.println(compiled);
+
+    FileWriter fw = new FileWriter("exampleclass.d.ts");
+    fw.write(compiled);
+    fw.flush();
+    fw.close();
 
     //    TypeScriptCompiler compiler = new TypeScriptCompiler(new TypeScriptSettings());
     //    compiler.add(ExampleClass.class);

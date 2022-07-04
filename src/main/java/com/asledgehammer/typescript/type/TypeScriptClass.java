@@ -206,14 +206,26 @@ public class TypeScriptClass extends TypeScriptElement {
 
     String prefix = prefixOriginal + "  ";
     StringBuilder stringBuilder = new StringBuilder();
+
+    if (clazz.isInterface()) {
+      stringBuilder.append("[INTERFACE] ");
+    } else {
+      stringBuilder.append("[");
+      if (Modifier.isAbstract(clazz.getModifiers())) {
+        stringBuilder.append("ABSTRACT ");
+      }
+      stringBuilder.append("CLASS] ");
+    }
+
     stringBuilder.append(clazz.getName());
     Class<?> superClazz = clazz.getSuperclass();
 
-    Type genericSuperclass = clazz.getGenericSuperclass();
-    if (genericSuperclass != null) {
+
+    Type genericSuperclazz = clazz.getGenericSuperclass();
+    if (genericSuperclazz != null && !genericSuperclazz.equals(Object.class)) {
       stringBuilder.append(" extends ").append(clazz.getGenericSuperclass().getTypeName());
     } else {
-      if (superClazz != null) {
+      if (superClazz != null && !superClazz.equals(Object.class)) {
         stringBuilder.append(" extends ").append(superClazz.getName());
       }
     }
@@ -235,14 +247,14 @@ public class TypeScriptClass extends TypeScriptElement {
     }
     stringBuilder.append(compiledParams);
 
-//    if (superClazz != null) {
-//      stringBuilder.append(" ").append(superClazz.getName());
-//    } else if (clazz != null && clazz.isInterface()) {
-//      Class<?>[] interfaces = clazz.getInterfaces();
-//      if (interfaces.length == 1) {
-//        stringBuilder.append(" extends ").append(interfaces[0].getName());
-//      }
-//    }
+    if (superClazz != null && !superClazz.equals(Object.class)) {
+      stringBuilder.append(" extends ").append(superClazz.getName());
+    } else if (clazz.isInterface()) {
+      Class<?>[] interfaces = clazz.getInterfaces();
+      if (interfaces.length == 1) {
+        stringBuilder.append(" extends ").append(interfaces[0].getName());
+      }
+    }
 
     stringBuilder.append(" {\n");
 
@@ -268,7 +280,11 @@ public class TypeScriptClass extends TypeScriptElement {
       }
     }
 
-    stringBuilder.append(constructor.compileCustomConstructor(prefix)).append('\n');
+    if (clazz.isInterface()) {
+      stringBuilder.append(prefix).append("protected constructor();\n");
+    } else {
+      stringBuilder.append(constructor.compileCustomConstructor(prefix)).append('\n');
+    }
 
     if (!methods.isEmpty()) {
       List<String> names = new ArrayList<>(methods.keySet());

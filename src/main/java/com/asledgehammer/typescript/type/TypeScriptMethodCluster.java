@@ -2,11 +2,12 @@ package com.asledgehammer.typescript.type;
 
 import com.asledgehammer.typescript.TypeScriptGraph;
 import com.asledgehammer.typescript.util.ClazzUtils;
-import com.asledgehammer.typescript.util.ComplexGenericMap;
 import com.asledgehammer.typescript.util.DocBuilder;
 
 import java.lang.reflect.*;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCompilable {
@@ -22,6 +23,8 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
 
   private final String methodName;
 
+  List<Method> sortedMethods = new ArrayList<>();
+
   public TypeScriptMethodCluster(TypeScriptElement element, Method method) {
     this.element = element;
     this.methodName = method.getName();
@@ -33,12 +36,15 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     Class<?> clazz = element.clazz;
     if (clazz == null) return;
 
-    Method[] methods = clazz.getMethods();
-    this.exists = methods.length != 0;
+    Method[] ms = clazz.getDeclaredMethods();
+    Collections.addAll(sortedMethods, ms);
+    sortedMethods.sort(Comparator.comparingInt(Method::getParameterCount));
+
+    this.exists = sortedMethods.size() != 0;
 
     this.minParamCount = exists ? Integer.MAX_VALUE : 0;
 
-    for (Method method : methods) {
+    for (Method method : sortedMethods) {
 
       if (!methodName.equals(method.getName())) continue;
       if (Modifier.isStatic(method.getModifiers()) != isStatic) continue;
@@ -67,6 +73,18 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
 
           tName = TypeScriptElement.adaptType(tName);
           tName = TypeScriptElement.inspect(graph, tName);
+
+//          String genericParamsBody = "";
+//          TypeVariable<?>[] genericTypes = element.clazz.getTypeParameters();
+//          if (genericTypes.length != 0) {
+//            genericParamsBody = "<";
+//            for (TypeVariable<?> variable : genericTypes) {
+//              genericParamsBody += variable.getTypeName() + ", ";
+//            }
+//            genericParamsBody = genericParamsBody.substring(0, genericParamsBody.length() - 2) + '>';
+//          }
+//
+//          tName += genericParamsBody;
 
           if (!argSlot.contains(tName)) {
             argSlot.add(tName);
@@ -120,12 +138,14 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
       docBuilder.appendLine();
     }
     docBuilder.appendLine("Method Parameters: ");
-    for (Method method : clazz.getDeclaredMethods()) {
+
+    for (Method method : sortedMethods) {
 
       if (!methodName.equals(method.getName())) continue;
       if (Modifier.isStatic(method.getModifiers()) != isStatic) continue;
 
       Parameter[] parameters = method.getParameters();
+
       if (parameters.length != 0) {
         String compiled = "(";
         for (Parameter parameter : method.getParameters()) {
@@ -145,7 +165,7 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
         compiled = compiled.substring(0, compiled.length() - 2) + ')';
         docBuilder.appendLine(" - " + compiled);
       } else {
-        docBuilder.appendLine(" - (Empty Constructor)");
+        docBuilder.appendLine(" - (Empty)");
       }
     }
     return docBuilder.build(prefix);
@@ -160,7 +180,7 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     builder.append(walkDocs(prefix)).append('\n');
     builder.append(prefix);
 
-    if(isStatic) builder.append("static ");
+    if (isStatic) builder.append("static ");
     builder.append(methodName);
 
     String genericParamsBody = "";
@@ -210,76 +230,76 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
   }
 
   public String compileLua(String table) {
-//    String compiled = "function " + table + '.';
-//    String methodBody = methodName + "(";
-//    if (!parameters.isEmpty()) {
-//      for (TypeScriptMethod.TypeScriptMethodParameter parameter : parameters) {
-//        methodBody += parameter.name + ", ";
-//      }
-//      methodBody = methodBody.substring(0, methodBody.length() - 2);
-//    }
-//    methodBody += ")";
-//
-//    compiled += methodBody;
-//
-//    if (!returnType.equalsIgnoreCase("void")) {
-//      compiled += " return " + methodBody;
-//    } else {
-//      compiled += ' ' + methodBody;
-//    }
-//
-//    compiled += " end";
-//    return compiled;
+    //    String compiled = "function " + table + '.';
+    //    String methodBody = methodName + "(";
+    //    if (!parameters.isEmpty()) {
+    //      for (TypeScriptMethod.TypeScriptMethodParameter parameter : parameters) {
+    //        methodBody += parameter.name + ", ";
+    //      }
+    //      methodBody = methodBody.substring(0, methodBody.length() - 2);
+    //    }
+    //    methodBody += ")";
+    //
+    //    compiled += methodBody;
+    //
+    //    if (!returnType.equalsIgnoreCase("void")) {
+    //      compiled += " return " + methodBody;
+    //    } else {
+    //      compiled += ' ' + methodBody;
+    //    }
+    //
+    //    compiled += " end";
+    //    return compiled;
     return "";
   }
 
   public String compileTypeScriptFunction(String prefix) {
-//    StringBuilder builder = new StringBuilder();
-//
-//    DocBuilder doc = new DocBuilder();
-//    if (bStatic) doc.appendLine("@noSelf");
-//    if (!parameters.isEmpty()) {
-//      if (!doc.isEmpty()) doc.appendLine();
-//      String compiled = "(";
-//
-//      ComplexGenericMap genericMap = container.genericMap;
-//      Parameter[] parameters = method.getParameters();
-//      for (Parameter parameter : parameters) {
-//        String tName =
-//                (parameter.isVarArgs()
-//                        ? parameter.getType().getComponentType().getSimpleName() + "..."
-//                        : parameter.getType().getSimpleName())
-//                        + " "
-//                        + parameter.getName();
-//        if (genericMap != null) {
-//          tName = ClazzUtils.walkTypesRecursively(genericMap, container.clazz, tName);
-//        }
-//        tName = TypeScriptElement.adaptType(tName);
-//        tName = TypeScriptElement.inspect(container.namespace.getGraph(), tName);
-//        compiled += tName + ", ";
-//      }
-//      compiled =
-//              compiled.substring(0, compiled.length() - 2)
-//                      + "): "
-//                      + method.getReturnType().getSimpleName();
-//
-//      doc.appendLine(compiled);
-//    }
-//
-//    if (!doc.isEmpty()) {
-//      builder.append(doc.build(prefix)).append('\n');
-//    }
-//    String compiled = "export function " + method.getName() + "(";
-//
-//    if (!parameters.isEmpty()) {
-//      compiled += "this: void, ";
-//      for (TypeScriptMethod.TypeScriptMethodParameter parameter : parameters) {
-//        compiled += parameter.compile("") + ", ";
-//      }
-//      compiled = compiled.substring(0, compiled.length() - 2);
-//    }
-//    compiled += "): " + returnType;
-//    return builder.append(compiled).toString();
+    //    StringBuilder builder = new StringBuilder();
+    //
+    //    DocBuilder doc = new DocBuilder();
+    //    if (bStatic) doc.appendLine("@noSelf");
+    //    if (!parameters.isEmpty()) {
+    //      if (!doc.isEmpty()) doc.appendLine();
+    //      String compiled = "(";
+    //
+    //      ComplexGenericMap genericMap = container.genericMap;
+    //      Parameter[] parameters = method.getParameters();
+    //      for (Parameter parameter : parameters) {
+    //        String tName =
+    //                (parameter.isVarArgs()
+    //                        ? parameter.getType().getComponentType().getSimpleName() + "..."
+    //                        : parameter.getType().getSimpleName())
+    //                        + " "
+    //                        + parameter.getName();
+    //        if (genericMap != null) {
+    //          tName = ClazzUtils.walkTypesRecursively(genericMap, container.clazz, tName);
+    //        }
+    //        tName = TypeScriptElement.adaptType(tName);
+    //        tName = TypeScriptElement.inspect(container.namespace.getGraph(), tName);
+    //        compiled += tName + ", ";
+    //      }
+    //      compiled =
+    //              compiled.substring(0, compiled.length() - 2)
+    //                      + "): "
+    //                      + method.getReturnType().getSimpleName();
+    //
+    //      doc.appendLine(compiled);
+    //    }
+    //
+    //    if (!doc.isEmpty()) {
+    //      builder.append(doc.build(prefix)).append('\n');
+    //    }
+    //    String compiled = "export function " + method.getName() + "(";
+    //
+    //    if (!parameters.isEmpty()) {
+    //      compiled += "this: void, ";
+    //      for (TypeScriptMethod.TypeScriptMethodParameter parameter : parameters) {
+    //        compiled += parameter.compile("") + ", ";
+    //      }
+    //      compiled = compiled.substring(0, compiled.length() - 2);
+    //    }
+    //    compiled += "): " + returnType;
+    //    return builder.append(compiled).toString();
     return "";
   }
 }

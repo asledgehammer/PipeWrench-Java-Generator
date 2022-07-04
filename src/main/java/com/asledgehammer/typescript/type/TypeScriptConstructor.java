@@ -4,11 +4,10 @@ import com.asledgehammer.typescript.TypeScriptGraph;
 import com.asledgehammer.typescript.util.ClazzUtils;
 import com.asledgehammer.typescript.util.DocBuilder;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
+import java.lang.reflect.*;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptCompilable {
@@ -20,6 +19,8 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
   private final TypeScriptElement element;
   public boolean exists = false;
   private int minParamCount = Integer.MAX_VALUE;
+
+  List<Constructor<?>> sortedConstructors = new ArrayList<>();
 
   public TypeScriptConstructor(TypeScriptElement element) {
     this.element = element;
@@ -33,9 +34,13 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
     Constructor<?>[] constructors = clazz.getConstructors();
     this.exists = constructors.length != 0;
 
+    Collections.addAll(sortedConstructors, constructors);
+    sortedConstructors.sort(Comparator.comparingInt(Constructor::getParameterCount));
+
+
     this.minParamCount = exists ? Integer.MAX_VALUE : 0;
 
-    for (Constructor<?> constructor : constructors) {
+    for (Constructor<?> constructor : sortedConstructors) {
 
       Type[] types = constructor.getGenericParameterTypes();
       if (minParamCount > types.length) {
@@ -110,7 +115,7 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
     if (clazz == null || !exists) return "";
     DocBuilder docBuilder = new DocBuilder();
     docBuilder.appendLine("Constructors: ");
-    for (Constructor<?> constructor : clazz.getConstructors()) {
+    for (Constructor<?> constructor : sortedConstructors) {
       Parameter[] parameters = constructor.getParameters();
       if (parameters.length != 0) {
         String compiled = "(";
@@ -143,18 +148,11 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
 
     StringBuilder builder = new StringBuilder();
     builder.append(walkDocs(prefix)).append('\n');
-    builder.append(prefix).append("constructor");
-
-    String genericParamsBody = "";
-//    TypeVariable<?>[] genericTypes = element.clazz.getTypeParameters();
-//    if (genericTypes.length != 0) {
-//      genericParamsBody = "<";
-//      for (TypeVariable<?> variable : genericTypes) {
-//        genericParamsBody += variable.getTypeName() + ", ";
-//      }
-//      genericParamsBody = genericParamsBody.substring(0, genericParamsBody.length() - 2) + '>';
-//      builder.append(genericParamsBody);
-//    }
+    builder.append(prefix);
+    if (Modifier.isAbstract(clazz.getModifiers())) {
+      builder.append("protected ");
+    }
+    builder.append("constructor");
 
     builder.append('(');
     String s = "";
@@ -193,56 +191,6 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
 
   @Override
   public String compile(String prefix) {
-    Class<?> clazz = element.clazz;
-    if (clazz == null || !exists) return "";
-
-    StringBuilder builder = new StringBuilder();
-    builder.append(walkDocs(prefix)).append('\n');
-    builder.append(prefix).append("static new");
-
-    String genericParamsBody = "";
-//    TypeVariable<?>[] genericTypes = element.clazz.getTypeParameters();
-//    if (genericTypes.length != 0) {
-//      genericParamsBody = "<";
-//      for (TypeVariable<?> variable : genericTypes) {
-//        genericParamsBody += variable.getTypeName() + ", ";
-//      }
-//      genericParamsBody = genericParamsBody.substring(0, genericParamsBody.length() - 2) + '>';
-//      builder.append(genericParamsBody);
-//    }
-
-    builder.append('(');
-    String s = "";
-    for (int i = 0; i < allParameterTypes.size(); i++) {
-
-      String sEntry = "arg" + i;
-      if (i > minParamCount - 1) sEntry += '?';
-      sEntry += ": ";
-
-      String sParams = "";
-      List<String> argSlot = allParameterTypes.get(i);
-      for (String argSlotEntry : argSlot) {
-        sParams += argSlotEntry + " | ";
-      }
-
-      s += sEntry + sParams.substring(0, sParams.length() - 3);
-
-      boolean isPrimitive = false;
-      List<Boolean> paramPrimitiveList = canPassNull.get(i);
-      for (Boolean aBoolean : paramPrimitiveList) {
-        if (aBoolean) {
-          isPrimitive = true;
-          break;
-        }
-      }
-      if (!isPrimitive) s += " | null";
-
-      s += ", ";
-    }
-
-    if (s.length() != 0) s = s.substring(0, s.length() - 2);
-
-    builder.append(s).append("): ").append(clazz.getName()).append(genericParamsBody).append(";");
-    return builder.toString();
+    return compileCustomConstructor(prefix);
   }
 }
