@@ -162,7 +162,22 @@ public class TypeScriptEnum extends TypeScriptElement implements TypeScriptCompi
         .append('\n');
 
     stringBuilder.append(prefixOriginal).append("export class ").append(getName()).append(" {\n");
-    stringBuilder.append(prefix).append("private constructor();\n\n");
+    stringBuilder.append(prefix).append("private constructor();\n");
+
+    List<Enum<?>> values = Arrays.asList((Enum<?>[]) (clazz.getEnumConstants()));
+    values.sort(Comparator.comparing(Enum::name));
+
+    if (!values.isEmpty()) {
+      for (Enum<?> value : values) {
+        stringBuilder
+                .append(prefix)
+                .append("static readonly ")
+                .append(value.name())
+                .append(": ")
+                .append(clazz.getName())
+                .append("; \n");
+      }
+    }
 
     if (!fields.isEmpty()) {
 
@@ -188,9 +203,8 @@ public class TypeScriptEnum extends TypeScriptElement implements TypeScriptCompi
       }
     }
 
-    stringBuilder.append('\n').append(prefix).append("/* METHODS */\n\n");
-    stringBuilder.append(prefix).append("name(): string;\n\n");
-    stringBuilder.append(prefix).append("ordinal(): number;\n\n");
+    stringBuilder.append(prefix).append("name(): string;\n");
+    stringBuilder.append(prefix).append("ordinal(): number;\n");
     if (!methods.isEmpty()) {
 
       ArrayList<String> toRemove = new ArrayList<>();

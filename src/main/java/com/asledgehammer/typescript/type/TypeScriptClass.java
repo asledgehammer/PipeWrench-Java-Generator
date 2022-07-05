@@ -11,8 +11,8 @@ public class TypeScriptClass extends TypeScriptElement {
 
   private final List<TypeScriptGeneric> genericParameters = new ArrayList<>();
   private final Map<String, TypeScriptField> fields = new HashMap<>();
-  private final Map<String, List<TypeScriptMethodCluster>> methods = new HashMap<>();
-  private final Map<String, List<TypeScriptMethodCluster>> staticMethods = new HashMap<>();
+  private final Map<String, TypeScriptMethodCluster> methods = new HashMap<>();
+  private final Map<String, TypeScriptMethodCluster> staticMethods = new HashMap<>();
   private TypeScriptConstructor constructor;
 
   protected TypeScriptClass(TypeScriptNamespace namespace, Class<?> clazz) {
@@ -25,7 +25,7 @@ public class TypeScriptClass extends TypeScriptElement {
     System.out.println("Walking " + getName());
     walkConstructors(graph);
     walkGenericParameters(graph);
-    if(getNamespace().getGraph().getCompiler().getSettings().renderFields) {
+    if (getNamespace().getGraph().getCompiler().getSettings().renderFields) {
       walkFields(graph);
     }
     walkMethods(graph);
@@ -44,7 +44,7 @@ public class TypeScriptClass extends TypeScriptElement {
 
   private void checkDuplicateFieldMethods(TypeScriptGraph ignored) {
 
-    if(!getNamespace().getGraph().getCompiler().getSettings().renderFields) {
+    if (!getNamespace().getGraph().getCompiler().getSettings().renderFields) {
       return;
     }
     List<String> names = new ArrayList<>(fields.keySet());
@@ -82,7 +82,7 @@ public class TypeScriptClass extends TypeScriptElement {
 
   private void walkFields(TypeScriptGraph graph) {
     if (clazz == null) return;
-    if(!getNamespace().getGraph().getCompiler().getSettings().renderFields) {
+    if (!getNamespace().getGraph().getCompiler().getSettings().renderFields) {
       return;
     }
     fields.clear();
@@ -105,20 +105,18 @@ public class TypeScriptClass extends TypeScriptElement {
 
       List<TypeScriptMethodCluster> ms;
       if (Modifier.isStatic(method.getModifiers())) {
-        ms = staticMethods.computeIfAbsent(method.getName(), s -> new ArrayList<>());
+        if (!staticMethods.containsKey(method.getName())) {
+          staticMethods.put(method.getName(), new TypeScriptMethodCluster(this, method));
+        }
       } else {
-        ms = methods.computeIfAbsent(method.getName(), s -> new ArrayList<>());
+        if (!methods.containsKey(method.getName())) {
+          methods.put(method.getName(), new TypeScriptMethodCluster(this, method));
+        }
       }
-      if (ms.size() == 1) continue;
-      ms.add(new TypeScriptMethodCluster(this, method));
     }
 
-    for (List<TypeScriptMethodCluster> methods : this.methods.values()) {
-      for (TypeScriptMethodCluster method : methods) method.walk(graph);
-    }
-    for (List<TypeScriptMethodCluster> methods : this.staticMethods.values()) {
-      for (TypeScriptMethodCluster method : methods) method.walk(graph);
-    }
+    for (TypeScriptMethodCluster method : this.methods.values()) method.walk(graph);
+    for (TypeScriptMethodCluster method : this.staticMethods.values()) method.walk(graph);
   }
 
   //  public String compileStaticOnly(String prefixOriginal) {
@@ -198,7 +196,7 @@ public class TypeScriptClass extends TypeScriptElement {
   @Override
   public String compile(String prefixOriginal) {
 
-    if(clazz == null) return "";
+    if (clazz == null) return "";
 
     DocBuilder docBuilder = new DocBuilder();
     docBuilder.appendLine("@customConstructor " + clazz.getSimpleName() + ".new");
@@ -219,7 +217,6 @@ public class TypeScriptClass extends TypeScriptElement {
 
     stringBuilder.append(clazz.getName());
     Class<?> superClazz = clazz.getSuperclass();
-
 
     Type genericSuperclazz = clazz.getGenericSuperclass();
     if (genericSuperclazz != null && !genericSuperclazz.equals(Object.class)) {
@@ -247,14 +244,14 @@ public class TypeScriptClass extends TypeScriptElement {
     }
     stringBuilder.append(compiledParams);
 
-//    if (superClazz != null && !superClazz.equals(Object.class)) {
-//      stringBuilder.append(" extends ").append(superClazz.getName());
-//    } else if (clazz.isInterface()) {
-//      Class<?>[] interfaces = clazz.getInterfaces();
-//      if (interfaces.length == 1) {
-//        stringBuilder.append(" extends ").append(interfaces[0].getName());
-//      }
-//    }
+    //    if (superClazz != null && !superClazz.equals(Object.class)) {
+    //      stringBuilder.append(" extends ").append(superClazz.getName());
+    //    } else if (clazz.isInterface()) {
+    //      Class<?>[] interfaces = clazz.getInterfaces();
+    //      if (interfaces.length == 1) {
+    //        stringBuilder.append(" extends ").append(interfaces[0].getName());
+    //      }
+    //    }
 
     stringBuilder.append(" {\n");
 
@@ -291,10 +288,8 @@ public class TypeScriptClass extends TypeScriptElement {
       names.sort(Comparator.naturalOrder());
       // Non-Static Method(s)
       for (String name : names) {
-        List<TypeScriptMethodCluster> methods = this.methods.get(name);
-        for (TypeScriptMethodCluster method : methods) {
-          stringBuilder.append(method.compile(prefix)).append('\n');
-        }
+        TypeScriptMethodCluster method = this.methods.get(name);
+        stringBuilder.append(method.compile(prefix)).append('\n');
       }
     }
 
@@ -303,18 +298,16 @@ public class TypeScriptClass extends TypeScriptElement {
       names.sort(Comparator.naturalOrder());
       // Static Method(s)
       for (String name : names) {
-        List<TypeScriptMethodCluster> methods = this.staticMethods.get(name);
-        for (TypeScriptMethodCluster method : methods) {
-          stringBuilder.append(method.compile(prefix)).append('\n');
-        }
+        TypeScriptMethodCluster method = this.staticMethods.get(name);
+        stringBuilder.append(method.compile(prefix)).append('\n');
       }
     }
 
     if (!stringBuilder.toString().endsWith("\n")) {
       stringBuilder.append('\n');
     }
-//    if (stringBuilder.toString().endsWith("\n"))
-//      stringBuilder.setLength(stringBuilder.length() - 1);
+    //    if (stringBuilder.toString().endsWith("\n"))
+    //      stringBuilder.setLength(stringBuilder.length() - 1);
     stringBuilder.append(prefixOriginal).append("}");
     return stringBuilder.toString();
   }
@@ -322,20 +315,22 @@ public class TypeScriptClass extends TypeScriptElement {
   @Override
   public String compileLua(String table) {
     StringBuilder stringBuilder = new StringBuilder();
-    if (!methods.isEmpty()) {
-      List<String> names = new ArrayList<>(methods.keySet());
+    if (!staticMethods.isEmpty()) {
+      List<String> names = new ArrayList<>(staticMethods.keySet());
       names.sort(Comparator.naturalOrder());
       for (String name : names) {
-        List<TypeScriptMethodCluster> methods = this.methods.get(name);
-        for (TypeScriptMethodCluster method : methods) {
-          stringBuilder.append(method.compileLua(table)).append('\n');
-        }
+        TypeScriptMethodCluster method = this.staticMethods.get(name);
+        stringBuilder.append(method.compileLua(table)).append('\n');
       }
     }
     return stringBuilder.toString();
   }
 
-  public Map<String, List<TypeScriptMethodCluster>> getMethods() {
+  public Map<String, TypeScriptMethodCluster> getMethods() {
     return this.methods;
+  }
+
+  public Map<String, TypeScriptMethodCluster> getStaticMethods() {
+    return this.staticMethods;
   }
 }

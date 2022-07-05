@@ -321,76 +321,105 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
   }
 
   public String compileLua(String table) {
-    //    String compiled = "function " + table + '.';
-    //    String methodBody = methodName + "(";
-    //    if (!parameters.isEmpty()) {
-    //      for (TypeScriptMethod.TypeScriptMethodParameter parameter : parameters) {
-    //        methodBody += parameter.name + ", ";
-    //      }
-    //      methodBody = methodBody.substring(0, methodBody.length() - 2);
-    //    }
-    //    methodBody += ")";
-    //
-    //    compiled += methodBody;
-    //
-    //    if (!returnType.equalsIgnoreCase("void")) {
-    //      compiled += " return " + methodBody;
-    //    } else {
-    //      compiled += ' ' + methodBody;
-    //    }
-    //
-    //    compiled += " end";
-    //    return compiled;
-    return "";
+    String compiled = "function " + table + '.';
+    String methodBody = methodName + "(";
+    if (!allParameters.isEmpty()) {
+      for (int i = 0; i < this.allParameters.size(); i++) {
+        methodBody += "arg" + (i + 1) + ", ";
+      }
+      methodBody = methodBody.substring(0, methodBody.length() - 2);
+    }
+    methodBody += ")";
+    compiled += methodBody;
+    compiled += " return " + methodBody + " end";
+    return compiled;
   }
 
   public String compileTypeScriptFunction(String prefix) {
-    //    StringBuilder builder = new StringBuilder();
-    //
-    //    DocBuilder doc = new DocBuilder();
-    //    if (bStatic) doc.appendLine("@noSelf");
-    //    if (!parameters.isEmpty()) {
-    //      if (!doc.isEmpty()) doc.appendLine();
-    //      String compiled = "(";
-    //
-    //      ComplexGenericMap genericMap = container.genericMap;
-    //      Parameter[] parameters = method.getParameters();
-    //      for (Parameter parameter : parameters) {
-    //        String tName =
-    //                (parameter.isVarArgs()
-    //                        ? parameter.getType().getComponentType().getSimpleName() + "..."
-    //                        : parameter.getType().getSimpleName())
-    //                        + " "
-    //                        + parameter.getName();
-    //        if (genericMap != null) {
-    //          tName = ClazzUtils.walkTypesRecursively(genericMap, container.clazz, tName);
-    //        }
-    //        tName = TypeScriptElement.adaptType(tName);
-    //        tName = TypeScriptElement.inspect(container.namespace.getGraph(), tName);
-    //        compiled += tName + ", ";
-    //      }
-    //      compiled =
-    //              compiled.substring(0, compiled.length() - 2)
-    //                      + "): "
-    //                      + method.getReturnType().getSimpleName();
-    //
-    //      doc.appendLine(compiled);
-    //    }
-    //
-    //    if (!doc.isEmpty()) {
-    //      builder.append(doc.build(prefix)).append('\n');
-    //    }
-    //    String compiled = "export function " + method.getName() + "(";
-    //
-    //    if (!parameters.isEmpty()) {
-    //      compiled += "this: void, ";
-    //      for (TypeScriptMethod.TypeScriptMethodParameter parameter : parameters) {
-    //        compiled += parameter.compile("") + ", ";
-    //      }
-    //      compiled = compiled.substring(0, compiled.length() - 2);
-    //    }
-    //    compiled += "): " + returnType;
-    //    return builder.append(compiled).toString();
-    return "";
+    StringBuilder builder = new StringBuilder();
+    builder.append(walkDocs(prefix)).append('\n');
+    builder.append(prefix).append("export function ").append(methodName);
+
+    String genericParamsBody;
+    List<String> genericTypeNames = new ArrayList<>();
+    List<TypeVariable<?>> genericTypes = new ArrayList<>();
+    for (Method m : sortedMethods) {
+      TypeVariable<?>[] tvs = m.getTypeParameters();
+      if (tvs.length != 0) {
+        for (TypeVariable<?> tv : tvs) {
+          if (genericTypeNames.contains(tv.getTypeName())) continue;
+          genericTypeNames.add(tv.getTypeName());
+          genericTypes.add(tv);
+        }
+      }
+    }
+
+    if (genericTypes.size() != 0) {
+      genericParamsBody = "<";
+      for (TypeVariable<?> variable : genericTypes) {
+        genericParamsBody += variable.getTypeName() + ", ";
+      }
+      genericParamsBody = genericParamsBody.substring(0, genericParamsBody.length() - 2) + '>';
+      builder.append(genericParamsBody);
+    }
+
+    builder.append('(');
+    String s = "";
+    for (int i = 0; i < allParameterTypes.size(); i++) {
+
+      String sEntry = "arg" + i;
+      if (i > minParamCount - 1) sEntry += '?';
+      sEntry += ": ";
+
+      String sParams = "";
+      List<Parameter> params = allParameters.get(i);
+      List<String> argSlot = allParameterTypes.get(i);
+      for (int j = 0; j < argSlot.size(); j++) {
+        String argSlotEntry = argSlot.get(j);
+        sParams +=
+                ClazzUtils.walkTypesRecursively(
+                        element.genericMap,
+                        params.get(j).getDeclaringExecutable().getDeclaringClass(),
+                        argSlotEntry)
+                        + " | ";
+      }
+
+      s += sEntry + sParams.substring(0, sParams.length() - 3);
+
+      boolean isPrimitive = false;
+      List<Boolean> paramPrimitiveList = canPassNull.get(i);
+      for (Boolean aBoolean : paramPrimitiveList) {
+        if (aBoolean) {
+          isPrimitive = true;
+          break;
+        }
+      }
+      if (!isPrimitive) s += " | null";
+
+      s += ", ";
+    }
+
+    if (s.length() != 0) s = s.substring(0, s.length() - 2);
+
+    builder.append(s).append("): ");
+
+    String returned = "";
+    for (String returnType : allReturnTypes) {
+      if (!returned.isEmpty()) {
+        returned += " | ";
+      }
+      returned += returnType;
+    }
+
+    if (returnTypeContainsNonPrimitive) {
+      if (!returned.isEmpty()) {
+        returned += " | ";
+      }
+      returned += "null";
+    }
+
+    builder.append(returned).append(';');
+
+    return builder.toString();
   }
 }
