@@ -8,7 +8,7 @@ public class TypeScriptSettings {
   public final List<Method> methodsBlackList = new ArrayList<>();
   public final List<String> methodsBlackListByPath = new ArrayList<>();
   public Recursion recursion = Recursion.NONE;
-  public boolean renderFields = false;
+  public boolean renderFields = true;
 
   public boolean isBlackListed(Method method) {
     if (methodsBlackList.contains(method)) return true;

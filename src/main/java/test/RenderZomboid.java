@@ -3,19 +3,13 @@ package test;
 import com.asledgehammer.typescript.TypeScriptCompiler;
 import com.asledgehammer.typescript.settings.Recursion;
 import com.asledgehammer.typescript.settings.TypeScriptSettings;
-import com.asledgehammer.typescript.type.TypeScriptClass;
-import com.asledgehammer.typescript.type.TypeScriptElement;
-import com.asledgehammer.typescript.type.TypeScriptEnum;
+import com.asledgehammer.typescript.type.*;
 import fmod.fmod.EmitterType;
 import fmod.fmod.FMODAudio;
 import fmod.fmod.FMODSoundBank;
 import fmod.fmod.FMODSoundEmitter;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.lwjgl.glfw.GLFWErrorCallback;
-import org.lwjgl.glfw.GLFWVidMode;
-import org.lwjgl.opengl.GL;
-import org.lwjgl.system.MemoryStack;
 import org.lwjglx.input.Keyboard;
 import se.krka.kahlua.vm.KahluaUtil;
 import zombie.*;
@@ -133,38 +127,26 @@ import zombie.vehicles.*;
 import zombie.world.moddata.ModData;
 
 import java.io.*;
-import java.nio.IntBuffer;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.NULL;
-
-@SuppressWarnings("ResultOfMethodCallIgnored")
+@SuppressWarnings({"ResultOfMethodCallIgnored", "SpellCheckingInspection"})
 public class RenderZomboid {
 
-  private static final List<Class<?>> clazzes = new ArrayList<>();
-  private final TypeScriptSettings tsSettings;
+  private static final List<Class<?>> classes = new ArrayList<>();
   private final TypeScriptCompiler tsCompiler;
-  private final File mainDir;
-  private final File genDir;
-  private final File outDir;
-
-  private static boolean initted = false;
+  private final File dirGenerated;
 
   public RenderZomboid() {
 
-    mainDir = new File("pipewrench");
-    genDir = new File(mainDir, "generated");
-    outDir = new File(mainDir, "output");
-    if (!mainDir.exists()) mainDir.mkdirs();
-    if (!genDir.exists()) genDir.mkdirs();
-    if (!outDir.exists()) outDir.mkdirs();
+    File dirMain = new File("pipewrench");
+    dirGenerated = new File(dirMain, "generated");
+    if (!dirMain.exists()) dirMain.mkdirs();
+    if (!dirGenerated.exists()) dirGenerated.mkdirs();
 
-    init();
+    GLInitializer.init();
 
-    tsSettings = new TypeScriptSettings();
+    TypeScriptSettings tsSettings = new TypeScriptSettings();
     tsSettings.methodsBlackListByPath.add("java.lang.Object#equals");
     tsSettings.methodsBlackListByPath.add("java.lang.Object#getClass");
     tsSettings.methodsBlackListByPath.add("java.lang.Object#hashCode");
@@ -176,7 +158,7 @@ public class RenderZomboid {
     tsSettings.readOnly = true;
 
     tsCompiler = new TypeScriptCompiler(tsSettings);
-    for (Class<?> clazz : clazzes) tsCompiler.add(clazz);
+    for (Class<?> clazz : classes) tsCompiler.add(clazz);
 
     tsCompiler.walk();
   }
@@ -202,7 +184,6 @@ function Exports.loadstring(lua) return loadstring(lua) end
 function Exports.execute(lua) return loadstring(lua)() end
 function Exports.addEventListener(id, func) Events[id].Add(func) end
 function Exports.removeEventListener(id, func) Events[id].Add(func) end
-
 """;
 
     StringBuilder builder = new StringBuilder(s);
@@ -222,7 +203,7 @@ function Exports.removeEventListener(id, func) Events[id].Add(func) end
 
     builder.append("return Exports\n");
 
-    File fileZomboidLua = new File(genDir, "Zomboid.lua");
+    File fileZomboidLua = new File(dirGenerated, "Zomboid.lua");
     write(fileZomboidLua, builder.toString());
   }
 
@@ -245,10 +226,11 @@ declare module 'Zomboid' {
     export type ToIntFunction<T> = any;
     export type ToLongFunction<T> = any;
     export type UnaryOperator<T> = any;
-  }
-""";
+  }""";
 
     String output = tsCompiler.compile();
+    TypeScriptClass globalObject =
+            (TypeScriptClass) tsCompiler.resolve(LuaManager.GlobalObject.class);
 
     List<TypeScriptElement> elements = tsCompiler.getAllGeneratedElements();
     List<String> knownNames = new ArrayList<>();
@@ -271,54 +253,55 @@ declare module 'Zomboid' {
 
     prunedElements.sort(nameSorter);
 
-    StringBuilder builder = new StringBuilder();
+    StringBuilder builderTypes = new StringBuilder();
+    StringBuilder builderClasses = new StringBuilder();
+    StringBuilder builderMethods = new StringBuilder();
     for (TypeScriptElement element : prunedElements) {
-      // TODO: Add generic types to class name.
-      String s = "export type " + element.getName() + " = " + element.getClazz().getName() + '\n';
-      builder.append(s);
+
+      String name = element.getClazz().getSimpleName();
+      if (name.contains("$")) {
+        String[] split = name.split("\\$");
+        name = split[split.length - 1];
+      }
+
+      int genParams = element.getClazz().getTypeParameters().length;
+      StringBuilder params = new StringBuilder();
+      if(genParams != 0) {
+        params.append("<");
+        for(int x = 0; x < genParams; x++) {
+          if(x == 0) {
+            params.append("any");
+          } else {
+            params.append(", any");
+          }
+        }
+        params.append(">");
+      }
+
+      String s;
+      if(element instanceof TypeScriptType) {
+        s = "export type " + name + " = " + element.getClazz().getName() + params + '\n';
+        builderTypes.append(s);
+      } else {
+        s = "/** @customConstructor " + name + ".new */\n";
+        s += "export class " + name + " extends " + element.getClazz().getName() + params + " {}\n";
+        builderClasses.append(s);
+      }
     }
 
-    File fileZomboid = new File(genDir, "Zomboid.d.ts");
-    String content = prepend + '\n' + output + '\n' + builder + "\n}";
+    Map<String, TypeScriptMethodCluster> methods = globalObject.getStaticMethods();
+    List<String> methodNames = new ArrayList<>(methods.keySet());
+    methodNames.sort(Comparator.naturalOrder());
+
+    for (String methodName : methodNames) {
+      TypeScriptMethodCluster method = methods.get(methodName);
+      String s = method.compileTypeScriptFunction("") + '\n';
+      builderMethods.append(s);
+    }
+
+    File fileZomboid = new File(dirGenerated, "Zomboid.d.ts");
+    String content = prepend + '\n' + output + '\n' + builderClasses + '\n' + builderTypes + '\n' + builderMethods + "\n}";
     write(fileZomboid, content);
-  }
-
-  private void renderGlobalClassReferences() {
-
-    List<TypeScriptElement> elements = tsCompiler.getAllGeneratedElements();
-    List<String> knownNames = new ArrayList<>();
-    List<TypeScriptElement> prunedElements = new ArrayList<>();
-
-    for (int index = elements.size() - 1; index >= 0; index--) {
-      TypeScriptElement element = elements.get(index);
-      Class<?> clazz = element.getClazz();
-      if (clazz == null) continue;
-      String name = clazz.getSimpleName();
-      if (name.contains("$")) {
-        String[] split = name.split("\\$");
-        name = split[split.length - 1];
-      }
-      if (!knownNames.contains(name)) {
-        prunedElements.add(element);
-        knownNames.add(name);
-      }
-    }
-
-    prunedElements.sort(nameSorter);
-
-    StringBuilder builder = new StringBuilder();
-    builder.append("import { fmod, gnu, java, org, se, zombie } from \"./java\";\n\n");
-    builder.append("// [PARTIAL:START]\n");
-
-    for (TypeScriptElement element : prunedElements) {
-      String s = "export type " + element.getName() + " = " + element.getClazz().getName() + '\n';
-      builder.append(s);
-    }
-
-    builder.append("// [PARTIAL:STOP]\n");
-
-    File fileGlobalClassReferences = new File(genDir, "global_class_References.d.ts");
-    write(fileGlobalClassReferences, builder.toString());
   }
 
   static {
@@ -874,65 +857,16 @@ declare module 'Zomboid' {
     addClass(ChatTab.class);
     addClass(LuaManager.GlobalObject.class);
 
-    clazzes.sort(Comparator.comparing(Class::getSimpleName));
+    classes.sort(Comparator.comparing(Class::getSimpleName));
   }
 
   public static void main(String[] args) {
     new RenderZomboid().render();
   }
 
-  // The window handle
-  private static long window;
-
-  /** Fix for LWJGL environment-required classes. */
-  private static void init() {
-
-    if (initted) return;
-    initted = true;
-
-    // Setup an error callback. The default implementation
-    // will print the error message in System.err.
-    GLFWErrorCallback.createPrint(System.err).set();
-
-    // Initialize GLFW. Most GLFW functions will not work before doing this.
-    if (!glfwInit()) throw new IllegalStateException("Unable to initialize GLFW");
-
-    // Configure GLFW
-    glfwDefaultWindowHints(); // optional, the current window hints are already the default
-    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); // the window will be resizable
-
-    // Create the window
-    window = glfwCreateWindow(300, 300, "Hello World!", NULL, NULL);
-    if (window == NULL) throw new RuntimeException("Failed to create the GLFW window");
-
-    // Get the thread stack and push a new frame
-    try (MemoryStack stack = stackPush()) {
-      IntBuffer pWidth = stack.mallocInt(1); // int*
-      IntBuffer pHeight = stack.mallocInt(1); // int*
-
-      // Get the window size passed to glfwCreateWindow
-      glfwGetWindowSize(window, pWidth, pHeight);
-
-      // Get the resolution of the primary monitor
-      GLFWVidMode vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-
-      // Center the window
-      glfwSetWindowPos(
-          window, (vidmode.width() - pWidth.get(0)) / 2, (vidmode.height() - pHeight.get(0)) / 2);
-    } // the stack frame is popped automatically
-
-    // Make the OpenGL context current
-    glfwMakeContextCurrent(window);
-    // Enable v-sync
-    glfwSwapInterval(1);
-
-    GL.createCapabilities();
-  }
-
   private static void addClass(Class<?> clazz) {
-    if (clazzes.contains(clazz)) return;
-    clazzes.add(clazz);
+    if (classes.contains(clazz)) return;
+    classes.add(clazz);
   }
 
   private static void write(File file, String content) {

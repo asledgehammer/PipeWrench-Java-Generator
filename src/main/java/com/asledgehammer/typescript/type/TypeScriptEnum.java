@@ -162,7 +162,7 @@ public class TypeScriptEnum extends TypeScriptElement implements TypeScriptCompi
         .append('\n');
 
     stringBuilder.append(prefixOriginal).append("export class ").append(getName()).append(" {\n");
-    stringBuilder.append(prefix).append("private constructor();\n");
+    stringBuilder.append(prefix).append("protected constructor();\n");
 
     List<Enum<?>> values = Arrays.asList((Enum<?>[]) (clazz.getEnumConstants()));
     values.sort(Comparator.comparing(Enum::name));
