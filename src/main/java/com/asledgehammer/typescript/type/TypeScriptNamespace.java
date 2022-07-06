@@ -47,8 +47,8 @@ public class TypeScriptNamespace
       String subNamespace = info[0];
       if (subNamespace.contains(".")) {
         subNamespace = subNamespace.split("\\.")[0];
-        if (!subNamespace.contains("_function") && subNamespace.contains("function")) {
-          subNamespace = subNamespace.replaceAll("function", "_function");
+        if (!subNamespace.contains("_function_") && subNamespace.contains("function")) {
+          subNamespace = subNamespace.replaceAll("function", "_function_");
         }
       }
 
@@ -65,7 +65,7 @@ public class TypeScriptNamespace
 
     Class<?> clazz = null;
     try {
-      clazz = Class.forName(fullPath.replace("_function", "function") + "." + (path));
+      clazz = Class.forName(fullPath.replace("_function_", "function") + "." + (path));
     } catch (Throwable ignored) {
     }
 
@@ -113,12 +113,12 @@ public class TypeScriptNamespace
 
     if (!valid) return "";
 
-    namespaces.remove("function");
+//    namespaces.remove("function");
 
     StringBuilder builder = new StringBuilder(prefixOriginal);
 
     String fullPath = this.fullPath;
-    fullPath = fullPath.replaceAll("\\.function ", "._function_ ");
+    fullPath = fullPath.replaceAll("\\.function", "._function_");
     fullPath = fullPath.replaceAll("\\.function\\.", "._function_.");
 
     builder.append("export namespace ").append(fullPath).append(" {\n");

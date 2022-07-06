@@ -19,8 +19,8 @@ public class TypeScriptCompiler {
     graph.add(clazzes);
   }
 
-  public String compile() {
-    return graph.compile();
+  public String compile(String prefix) {
+    return graph.compile(prefix);
   }
 
   public void walk() {

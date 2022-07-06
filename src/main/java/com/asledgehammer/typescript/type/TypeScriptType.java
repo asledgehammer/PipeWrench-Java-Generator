@@ -37,7 +37,7 @@ public class TypeScriptType extends TypeScriptElement {
   @Override
   public String compile(String prefix) {
     StringBuilder compiled = new StringBuilder(prefix);
-    compiled.append(prefix).append("export type ").append(name);
+    compiled.append("export type ").append(name);
     if (!genericParameters.isEmpty()) {
       compiled.append('<');
       for (TypeScriptGeneric param : genericParameters) {

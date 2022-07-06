@@ -178,7 +178,7 @@ public class ZomboidGenerator {
     FileWriter writer = new FileWriter(new File(generatedDir, "java.d.ts"));
     writer.write("// [PARTIAL:START]\n");
     writer.write("export type KahluaTable = any;\n");
-    writer.write(compiler.compile());
+    writer.write(compiler.compile(""));
     writer.write("// [PARTIAL:STOP]\n");
     writer.flush();
     writer.close();

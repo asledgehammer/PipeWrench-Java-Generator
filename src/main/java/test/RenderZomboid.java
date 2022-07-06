@@ -176,7 +176,6 @@ public class RenderZomboid {
     String s =
 """
 local Exports = {}
-
 function Exports.tonumber(arg) return tonumber(arg) end
 function Exports.tostring(arg) return tostring(arg) end
 function Exports.global(id) return _G[id] end
@@ -209,26 +208,8 @@ function Exports.removeEventListener(id, func) Events[id].Add(func) end
 
   private void renderZomboid() {
 
-    String prepend =
-"""
-/** @noResolution @noSelfInFile */
-declare module 'Zomboid' {
-  export namespace java.util._function {
-    export type BiConsumer<T, U> = any;
-    export type BiFunction<T, U, R> = any;
-    export type BooleanSupplier = any;
-    export type Consumer<T> = any;
-    export type Function<T, R> = any;
-    export type IntFunction<R> = any;
-    export type Predicate<T> = any;
-    export type Supplier<T> = any;
-    export type ToDoubleFunction<T> = any;
-    export type ToIntFunction<T> = any;
-    export type ToLongFunction<T> = any;
-    export type UnaryOperator<T> = any;
-  }""";
-
-    String output = tsCompiler.compile();
+    String prepend = "/** @noResolution @noSelfInFile */";
+    String output = tsCompiler.compile("  ");
     TypeScriptClass globalObject =
             (TypeScriptClass) tsCompiler.resolve(LuaManager.GlobalObject.class);
 
@@ -280,7 +261,9 @@ declare module 'Zomboid' {
 
       String s;
       if(element instanceof TypeScriptType) {
-        s = "export type " + name + " = " + element.getClazz().getName() + params + '\n';
+        String fullPath = element.getClazz().getName();
+        fullPath = fullPath.replaceAll(".function.", "._function_.");
+        s = "export type " + name + " = " + fullPath + params + '\n';
         builderTypes.append(s);
       } else {
         s = "/** @customConstructor " + name + ".new */\n";

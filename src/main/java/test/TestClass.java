@@ -28,7 +28,7 @@ public class TestClass {
     compiler.add(List.class);
     compiler.walk();
 
-    String compiled = compiler.compile();
+    String compiled = compiler.compile("");
     compiled += '\n';
 
 //    List<TypeScriptElement> elements = compiler.getAllGeneratedElements();

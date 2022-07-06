@@ -172,7 +172,7 @@ public abstract class TypeScriptElement
 
     int index = string.indexOf("<");
     if (index != -1) {
-      String forName = string.substring(0, index).replace("._function", ".function");
+      String forName = string.substring(0, index).replace("._function_", ".function");
       try {
         Class<?> cl = Class.forName(forName);
         graph.add(cl);
@@ -180,7 +180,7 @@ public abstract class TypeScriptElement
       }
     } else {
       try {
-        String forName = string.replace("._function", ".function");
+        String forName = string.replace("._function_", ".function");
         Class<?> cl = Class.forName(forName);
         graph.add(cl);
       } catch (Exception ignored) {
@@ -200,7 +200,7 @@ public abstract class TypeScriptElement
       type = type.substring(2);
     }
     if (type.contains(".function.")) {
-      type = type.replaceAll(".function.", "._function.");
+      type = type.replaceAll(".function.", "._function_.");
     }
 
     return switch (type) {

@@ -22,11 +22,10 @@ public class TypeScriptGraph {
     this.compiler = compiler;
   }
 
-  public String compile() {
+  public String compile(String prefix) {
 
     Map<String, TypeScriptNamespace> namespaces = getAllPopulatedNamespaces();
 
-    String prefix = "";
     StringBuilder builder = new StringBuilder();
     //
     List<String> names = new ArrayList<>(namespaces.keySet());
@@ -56,7 +55,7 @@ public class TypeScriptGraph {
         continue;
       }
 
-      if (key.equals("java.util.function")) continue;
+//      if (key.equals("java.util.function")) continue;
 
       TypeScriptNamespace namespace = namespaces.get(key);
       if (namespace.getName().isEmpty()) continue;

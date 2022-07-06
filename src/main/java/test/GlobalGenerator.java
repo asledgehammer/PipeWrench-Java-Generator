@@ -20,7 +20,7 @@ public class GlobalGenerator {
     compiler.walk();
 
     FileWriter writer = new FileWriter("globalobject.d.ts");
-    writer.write(compiler.compile());
+    writer.write(compiler.compile(""));
     writer.flush();
     writer.close();
   }
