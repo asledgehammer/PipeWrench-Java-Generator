@@ -10,6 +10,19 @@ public class ClazzUtils {
     throw new RuntimeException("Cannot instantiate ClazzUtils.");
   }
 
+  public String removeDuplicateNamespaces(String input) {
+    if(input == null || !input.contains(".")) return input;
+    String[] split = input.split("\\.");
+    String built = split[0];
+    if (split.length != 1) {
+      for (int index = 1; index < split.length; index++) {
+         if(split[index - 1].equals(split[index])) continue;
+         built += '.' + split[index];
+      }
+    }
+    return built;
+  }
+
   public static List<String> extractTypeDeclarations(Class<?> clazz) {
     List<String> list = new ArrayList<>();
     Type superClazz = clazz.getGenericSuperclass();
@@ -167,7 +180,7 @@ public class ClazzUtils {
       if (!nestedArgs.isEmpty()) {
         nestedArgsString += "<";
         for (String inner : nestedArgs) {
-
+          if(inner == null || inner.isEmpty()) continue;
           if (inner.indexOf('<') != -1) {
             nestedArgsString += walkTypesRecursively(genericMap, declClazz, inner) + ", ";
           } else {

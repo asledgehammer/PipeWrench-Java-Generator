@@ -164,51 +164,149 @@ public class RenderZomboid {
   }
 
   public void render() {
-    renderZomboid();
+    renderZomboidAsMultiFile();
     renderLuaZomboid();
   }
 
-  private void renderLuaZomboid() {
+  private void renderZomboidAsMultiFile() {
 
-    List<TypeScriptElement> elements = tsCompiler.getAllGeneratedElements();
-    elements.sort(nameSorter);
+    Map<TypeScriptNamespace, String> compiledNamespaces = tsCompiler.compileNamespacesSeparately("  ");
 
-    String s =
-"""
-local Exports = {}
-function Exports.tonumber(arg) return tonumber(arg) end
-function Exports.tostring(arg) return tostring(arg) end
-function Exports.global(id) return _G[id] end
-function Exports.loadstring(lua) return loadstring(lua) end
-function Exports.execute(lua) return loadstring(lua)() end
-function Exports.addEventListener(id, func) Events[id].Add(func) end
-function Exports.removeEventListener(id, func) Events[id].Add(func) end
-""";
+    // Write all references to a file to refer to for all files.
+    List<String> references = new ArrayList<>();
+    references.add("/// <reference path=\"Zomboid_API.d.ts\" />\n");
+    for(TypeScriptNamespace namespace : compiledNamespaces.keySet()) {
+      String fileName = "Zomboid__" + namespace.getFullPath().replaceAll("\\.", "_") + ".d.ts";
+      references.add("/// <reference path=\"" + fileName + "\" />\n");
+    }
 
-    StringBuilder builder = new StringBuilder(s);
-    builder.append(tsCompiler.resolve(LuaManager.GlobalObject.class).compileLua("Exports"));
+    references.sort(Comparator.naturalOrder());
 
-    for (TypeScriptElement element : elements) {
-      if (element instanceof TypeScriptClass || element instanceof TypeScriptEnum) {
-        String name = element.name;
+    StringBuilder referenceBuilder = new StringBuilder();
+    for(String s : references) {
+      referenceBuilder.append(s);
+    }
+
+    write(new File(dirGenerated, "Zomboid_References.d.ts"), referenceBuilder.toString());
+
+    for(TypeScriptNamespace namespace : compiledNamespaces.keySet()) {
+      String output = "/** @noResolution @noSelfInFile */\n";
+      output += "/// <reference path=\"Zomboid_References.d.ts\" />\n";
+      output += "declare module 'Zomboid' {\n";
+      output += compiledNamespaces.get(namespace) + "\n";
+
+      List<TypeScriptElement> elements = namespace.getAllGeneratedElements();
+      List<String> knownNames = new ArrayList<>();
+      List<TypeScriptElement> prunedElements = new ArrayList<>();
+      for (int index = elements.size() - 1; index >= 0; index--) {
+        TypeScriptElement element = elements.get(index);
+        Class<?> clazz = element.getClazz();
+        if (clazz == null) continue;
+        String name = clazz.getSimpleName();
         if (name.contains("$")) {
           String[] split = name.split("\\$");
           name = split[split.length - 1];
         }
-        String line = "Exports." + name + " = loadstring(\"return _G['" + name + "']\")()\n";
-        builder.append(line);
+        if (!knownNames.contains(name)) {
+          prunedElements.add(element);
+          knownNames.add(name);
+        }
+      }
+      prunedElements.sort(nameSorter);
+
+      output += "}\n";
+
+      String fileName = "Zomboid__" + namespace.getFullPath().replaceAll("\\.", "_") + ".d.ts";
+      File fileZomboid = new File(dirGenerated, fileName);
+      System.out.println("Writing file: " + fileName + "..");
+      write(fileZomboid, output);
+    }
+
+    String prepend = "/** @noResolution @noSelfInFile */\n";
+    prepend += "/// <reference path=\"Zomboid_References.d.ts\" />\n";
+    prepend += "declare module 'Zomboid' {\n";
+    TypeScriptClass globalObject =
+            (TypeScriptClass) tsCompiler.resolve(LuaManager.GlobalObject.class);
+
+    List<TypeScriptElement> elements = tsCompiler.getAllGeneratedElements();
+    List<String> knownNames = new ArrayList<>();
+    List<TypeScriptElement> prunedElements = new ArrayList<>();
+
+    for (int index = elements.size() - 1; index >= 0; index--) {
+      TypeScriptElement element = elements.get(index);
+      Class<?> clazz = element.getClazz();
+      if (clazz == null) continue;
+      String name = clazz.getSimpleName();
+      if (name.contains("$")) {
+        String[] split = name.split("\\$");
+        name = split[split.length - 1];
+      }
+      if (!knownNames.contains(name)) {
+        prunedElements.add(element);
+        knownNames.add(name);
       }
     }
 
-    builder.append("return Exports\n");
+    prunedElements.sort(nameSorter);
 
-    File fileZomboidLua = new File(dirGenerated, "Zomboid.lua");
-    write(fileZomboidLua, builder.toString());
+    StringBuilder builderTypes = new StringBuilder();
+    StringBuilder builderClasses = new StringBuilder();
+    StringBuilder builderMethods = new StringBuilder();
+    for (TypeScriptElement element : prunedElements) {
+
+      String name = element.getClazz().getSimpleName();
+      if (name.contains("$")) {
+        String[] split = name.split("\\$");
+        name = split[split.length - 1];
+      }
+
+      int genParams = element.getClazz().getTypeParameters().length;
+      StringBuilder params = new StringBuilder();
+      if(genParams != 0) {
+        params.append("<");
+        for(int x = 0; x < genParams; x++) {
+          if(x == 0) {
+            params.append("any");
+          } else {
+            params.append(", any");
+          }
+        }
+        params.append(">");
+      }
+
+      String s;
+      if(element instanceof TypeScriptType) {
+        String fullPath = element.getClazz().getName();
+        fullPath = fullPath.replaceAll(".function.", "._function_.");
+        s = "  export type " + name + " = " + fullPath + params + '\n';
+        builderTypes.append(s);
+      } else {
+        s = "  /** @customConstructor " + name + ".new */\n";
+        s += "  export class " + name + " extends " + element.getClazz().getName() + params + " {}\n";
+        builderClasses.append(s);
+      }
+    }
+
+    Map<String, TypeScriptMethodCluster> methods = globalObject.getStaticMethods();
+    List<String> methodNames = new ArrayList<>(methods.keySet());
+    methodNames.sort(Comparator.naturalOrder());
+
+    for (String methodName : methodNames) {
+      TypeScriptMethodCluster method = methods.get(methodName);
+      String s = method.compileTypeScriptFunction("  ") + '\n';
+      builderMethods.append(s);
+    }
+
+    File fileZomboid = new File(dirGenerated, "Zomboid_API.d.ts");
+    String content = prepend + builderClasses + '\n' + builderTypes + '\n' + builderMethods + "}\n";
+    System.out.println("Writing file: Zomboid_API.d.ts..");
+    write(fileZomboid, content);
   }
 
-  private void renderZomboid() {
+  private void renderZomboidAsOneFile() {
 
-    String prepend = "/** @noResolution @noSelfInFile */";
+    String prepend = "/** @noResolution @noSelfInFile */\n";
+    prepend += "declare module 'Zomboid' {";
     String output = tsCompiler.compile("  ");
     TypeScriptClass globalObject =
             (TypeScriptClass) tsCompiler.resolve(LuaManager.GlobalObject.class);
@@ -263,11 +361,11 @@ function Exports.removeEventListener(id, func) Events[id].Add(func) end
       if(element instanceof TypeScriptType) {
         String fullPath = element.getClazz().getName();
         fullPath = fullPath.replaceAll(".function.", "._function_.");
-        s = "export type " + name + " = " + fullPath + params + '\n';
+        s = "  export type " + name + " = " + fullPath + params + '\n';
         builderTypes.append(s);
       } else {
-        s = "/** @customConstructor " + name + ".new */\n";
-        s += "export class " + name + " extends " + element.getClazz().getName() + params + " {}\n";
+        s = "  /** @customConstructor " + name + ".new */\n";
+        s += "  export class " + name + " extends " + element.getClazz().getName() + params + " {}\n";
         builderClasses.append(s);
       }
     }
@@ -278,13 +376,51 @@ function Exports.removeEventListener(id, func) Events[id].Add(func) end
 
     for (String methodName : methodNames) {
       TypeScriptMethodCluster method = methods.get(methodName);
-      String s = method.compileTypeScriptFunction("") + '\n';
+      String s = method.compileTypeScriptFunction("  ") + '\n';
       builderMethods.append(s);
     }
 
-    File fileZomboid = new File(dirGenerated, "Zomboid.d.ts");
+    File fileZomboid = new File(dirGenerated, "Zomboid_API.d.ts");
     String content = prepend + '\n' + output + '\n' + builderClasses + '\n' + builderTypes + '\n' + builderMethods + "\n}";
     write(fileZomboid, content);
+  }
+
+  private void renderLuaZomboid() {
+
+    List<TypeScriptElement> elements = tsCompiler.getAllGeneratedElements();
+    elements.sort(nameSorter);
+
+    String s =
+            """
+            local Exports = {}
+            function Exports.tonumber(arg) return tonumber(arg) end
+            function Exports.tostring(arg) return tostring(arg) end
+            function Exports.global(id) return _G[id] end
+            function Exports.loadstring(lua) return loadstring(lua) end
+            function Exports.execute(lua) return loadstring(lua)() end
+            function Exports.addEventListener(id, func) Events[id].Add(func) end
+            function Exports.removeEventListener(id, func) Events[id].Add(func) end
+            """;
+
+    StringBuilder builder = new StringBuilder(s);
+    builder.append(tsCompiler.resolve(LuaManager.GlobalObject.class).compileLua("Exports"));
+
+    for (TypeScriptElement element : elements) {
+      if (element instanceof TypeScriptClass || element instanceof TypeScriptEnum) {
+        String name = element.name;
+        if (name.contains("$")) {
+          String[] split = name.split("\\$");
+          name = split[split.length - 1];
+        }
+        String line = "Exports." + name + " = loadstring(\"return _G['" + name + "']\")()\n";
+        builder.append(line);
+      }
+    }
+
+    builder.append("return Exports\n");
+
+    File fileZomboidLua = new File(dirGenerated, "Zomboid_API.lua");
+    write(fileZomboidLua, builder.toString());
   }
 
   static {

@@ -1,6 +1,7 @@
 package com.asledgehammer.typescript.type;
 
 import com.asledgehammer.typescript.TypeScriptGraph;
+import com.asledgehammer.typescript.settings.TypeScriptSettings;
 import com.asledgehammer.typescript.util.ClazzUtils;
 import com.asledgehammer.typescript.util.ComplexGenericMap;
 import com.asledgehammer.typescript.util.DocBuilder;
@@ -168,6 +169,20 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
         }
       }
 
+      if (returnClazz.equals(Object.class)
+          || returnClazz.equals(Object[].class)
+          || returnClazz.equals(Object[][].class)
+          || returnClazz.equals(Object[][][].class)
+          || returnClazz.equals(Object[][][][].class)
+          || returnClazz.equals(Object[][][][][].class)
+          || returnClazz.equals(Object[][][][][][].class)
+          || returnClazz.equals(Object[][][][][][][].class)
+          || returnClazz.equals(Object[][][][][][][][].class)
+          || returnClazz.equals(Object[][][][][][][][][].class)
+          || returnClazz.equals(Object[][][][][][][][][][].class)) {
+        returnType = "any";
+      }
+
       if (!this.allReturnTypes.contains(returnType)) {
         this.allReturnTypes.add(returnType);
       }
@@ -210,13 +225,17 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
           compiled += tName + ", ";
         }
         compiled = compiled.substring(0, compiled.length() - 2) + ')';
-        String returnType = ClazzUtils.walkTypesRecursively(element.genericMap, element.clazz, method.getGenericReturnType().getTypeName());
+        String returnType =
+            ClazzUtils.walkTypesRecursively(
+                element.genericMap, element.clazz, method.getGenericReturnType().getTypeName());
         returnType = TypeScriptElement.adaptType(returnType);
         returnType = TypeScriptElement.inspect(element.namespace.getGraph(), returnType);
         docBuilder.appendLine(" - " + compiled + ": " + returnType);
       } else {
         String compiled = "(Empty)";
-        String returnType = ClazzUtils.walkTypesRecursively(element.genericMap, element.clazz, method.getGenericReturnType().getTypeName());
+        String returnType =
+            ClazzUtils.walkTypesRecursively(
+                element.genericMap, element.clazz, method.getGenericReturnType().getTypeName());
         returnType = TypeScriptElement.adaptType(returnType);
         returnType = TypeScriptElement.inspect(element.namespace.getGraph(), returnType);
         docBuilder.appendLine(" - " + compiled + ": " + returnType);
@@ -227,6 +246,7 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
 
   @Override
   public String compile(String prefix) {
+    TypeScriptSettings settings = element.getNamespace().getGraph().getCompiler().getSettings();
 
     StringBuilder builder = new StringBuilder();
     builder.append(walkDocs(prefix)).append('\n');
@@ -271,44 +291,80 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
       String sParams = "";
       List<Parameter> params = allParameters.get(i);
       List<String> argSlot = allParameterTypes.get(i);
-      for (int j = 0; j < argSlot.size(); j++) {
-        String argSlotEntry = argSlot.get(j);
-        sParams +=
-            ClazzUtils.walkTypesRecursively(
-                    element.genericMap,
-                    params.get(j).getDeclaringExecutable().getDeclaringClass(),
-                    argSlotEntry)
-                + " | ";
-      }
+      ComplexGenericMap genericMap = element.genericMap;
 
-      s += sEntry + sParams.substring(0, sParams.length() - 3);
+      boolean hasAny = false;
 
-      boolean isPrimitive = false;
-      List<Boolean> paramPrimitiveList = canPassNull.get(i);
-      for (Boolean aBoolean : paramPrimitiveList) {
-        if (aBoolean) {
-          isPrimitive = true;
+      for (String argSlotEntry : argSlot) {
+        if (argSlotEntry.equals("any")) {
+          hasAny = true;
           break;
         }
       }
-      if (!isPrimitive) s += " | null";
+
+      if (hasAny) {
+        s += sEntry + "any";
+      } else {
+        for (int j = 0; j < argSlot.size(); j++) {
+          String argSlotEntry = argSlot.get(j);
+          Parameter parameter = params.get(j);
+          Class<?> methodClass = parameter.getDeclaringExecutable().getDeclaringClass();
+          String transformedArg;
+          if (parameter.getType().equals(Object.class)
+              || parameter.getType().equals(Object[].class)
+              || parameter.getType().equals(Object[][].class)
+              || parameter.getType().equals(Object[][][].class)
+              || parameter.getType().equals(Object[][][][].class)
+              || parameter.getType().equals(Object[][][][][].class)
+              || parameter.getType().equals(Object[][][][][][].class)
+              || parameter.getType().equals(Object[][][][][][][].class)
+              || parameter.getType().equals(Object[][][][][][][][].class)
+              || parameter.getType().equals(Object[][][][][][][][][].class)
+              || parameter.getType().equals(Object[][][][][][][][][][].class)) {
+            transformedArg = "any";
+          } else {
+            transformedArg = ClazzUtils.walkTypesRecursively(genericMap, methodClass, argSlotEntry);
+          }
+          sParams += transformedArg + " | ";
+        }
+
+        s += sEntry + sParams.substring(0, sParams.length() - 3);
+      }
+
+      if (settings.useNull) {
+        List<Boolean> paramPrimitiveList = canPassNull.get(i);
+        for (Boolean aBoolean : paramPrimitiveList) {
+          if (aBoolean) {
+            s += " | null";
+            break;
+          }
+        }
+      }
 
       s += ", ";
     }
 
     if (s.length() != 0) s = s.substring(0, s.length() - 2);
-
     builder.append(s).append("): ");
 
     String returned = "";
+    boolean hasAny = false;
     for (String returnType : allReturnTypes) {
-      if (!returned.isEmpty()) {
-        returned += " | ";
+      if (returnType.equals("any")) {
+        hasAny = true;
+        returned = "any";
+        break;
       }
-      returned += returnType;
     }
 
-    if (returnTypeContainsNonPrimitive) {
+    if (!hasAny) {
+      for (String returnType : allReturnTypes) {
+        if (!returned.isEmpty()) returned += " | ";
+        returned += returnType;
+      }
+    }
+
+    if (settings.useNull && returnTypeContainsNonPrimitive) {
       if (!returned.isEmpty()) {
         returned += " | ";
       }
@@ -377,11 +433,11 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
       for (int j = 0; j < argSlot.size(); j++) {
         String argSlotEntry = argSlot.get(j);
         sParams +=
-                ClazzUtils.walkTypesRecursively(
-                        element.genericMap,
-                        params.get(j).getDeclaringExecutable().getDeclaringClass(),
-                        argSlotEntry)
-                        + " | ";
+            ClazzUtils.walkTypesRecursively(
+                    element.genericMap,
+                    params.get(j).getDeclaringExecutable().getDeclaringClass(),
+                    argSlotEntry)
+                + " | ";
       }
 
       s += sEntry + sParams.substring(0, sParams.length() - 3);

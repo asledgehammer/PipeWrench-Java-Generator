@@ -2,8 +2,10 @@ package com.asledgehammer.typescript;
 
 import com.asledgehammer.typescript.settings.TypeScriptSettings;
 import com.asledgehammer.typescript.type.TypeScriptElement;
+import com.asledgehammer.typescript.type.TypeScriptNamespace;
 
 import java.util.List;
+import java.util.Map;
 
 public class TypeScriptCompiler {
 
@@ -17,6 +19,10 @@ public class TypeScriptCompiler {
 
   public void add(Class<?>... clazzes) {
     graph.add(clazzes);
+  }
+
+  public Map<TypeScriptNamespace, String> compileNamespacesSeparately(String prefix) {
+    return graph.compileNamespacesSeparately(prefix);
   }
 
   public String compile(String prefix) {

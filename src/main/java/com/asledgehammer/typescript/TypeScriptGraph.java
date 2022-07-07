@@ -22,41 +22,33 @@ public class TypeScriptGraph {
     this.compiler = compiler;
   }
 
+  private static boolean isIllegalName(String name) {
+    return name.startsWith("[L")
+        || name.startsWith("[")
+        || name.startsWith("void")
+        || name.startsWith("unknown")
+        || name.startsWith("any")
+        || name.startsWith("object")
+        || name.startsWith("boolean")
+        || name.startsWith("byte")
+        || name.startsWith("short")
+        || name.startsWith("int")
+        || name.startsWith("float")
+        || name.startsWith("double")
+        || name.startsWith("long")
+        || name.startsWith("char")
+        || name.startsWith("string");
+  }
+
   public String compile(String prefix) {
 
     Map<String, TypeScriptNamespace> namespaces = getAllPopulatedNamespaces();
-
     StringBuilder builder = new StringBuilder();
-    //
     List<String> names = new ArrayList<>(namespaces.keySet());
     names.sort(Comparator.naturalOrder());
-    //
 
     for (String key : names) {
-      // Internal Object[] arrays.
-      if (key.startsWith("[L")) continue;
-
-      // Any array.
-      if (key.startsWith("[")) continue;
-
-      if (key.startsWith("void")
-          || key.startsWith("unknown")
-          || key.startsWith("any")
-          || key.startsWith("object")
-          || key.startsWith("boolean")
-          || key.startsWith("byte")
-          || key.startsWith("short")
-          || key.startsWith("int")
-          || key.startsWith("float")
-          || key.startsWith("double")
-          || key.startsWith("long")
-          || key.startsWith("char")
-          || key.startsWith("string")) {
-        continue;
-      }
-
-//      if (key.equals("java.util.function")) continue;
-
+      if (isIllegalName(key)) continue;
       TypeScriptNamespace namespace = namespaces.get(key);
       if (namespace.getName().isEmpty()) continue;
       String compiled = namespace.compile(prefix);
@@ -65,6 +57,21 @@ public class TypeScriptGraph {
     }
 
     return builder.toString();
+  }
+
+  public Map<TypeScriptNamespace, String> compileNamespacesSeparately(String prefix) {
+    Map<TypeScriptNamespace, String> compiledMap = new HashMap<>();
+    Map<String, TypeScriptNamespace> namespaces = getAllPopulatedNamespaces();
+    List<String> names = new ArrayList<>(namespaces.keySet());
+    names.sort(Comparator.naturalOrder());
+    for (String key : names) {
+      if (isIllegalName(key)) continue;
+      TypeScriptNamespace namespace = namespaces.get(key);
+      if (namespace.getName().isEmpty()) continue;
+      String compiled = namespace.compile(prefix);
+      compiledMap.put(namespace, compiled);
+    }
+    return compiledMap;
   }
 
   public void walk() {
