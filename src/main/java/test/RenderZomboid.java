@@ -4,6 +4,7 @@ import com.asledgehammer.typescript.TypeScriptCompiler;
 import com.asledgehammer.typescript.settings.Recursion;
 import com.asledgehammer.typescript.settings.TypeScriptSettings;
 import com.asledgehammer.typescript.type.*;
+import com.asledgehammer.typescript.util.DocBuilder;
 import fmod.fmod.EmitterType;
 import fmod.fmod.FMODAudio;
 import fmod.fmod.FMODSoundBank;
@@ -127,12 +128,38 @@ import zombie.vehicles.*;
 import zombie.world.moddata.ModData;
 
 import java.io.*;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-@SuppressWarnings({"ResultOfMethodCallIgnored", "SpellCheckingInspection"})
+@SuppressWarnings({"ResultOfMethodCallIgnored", "SpellCheckingInspection", "unused"})
 public class RenderZomboid {
 
+  private static final String[] LICENSE =
+new String[] {"MIT License",
+"",
+"Copyright (c) $YEAR$ JabDoesThings",
+"",
+"Permission is hereby granted, free of charge, to any person obtaining a copy",
+"of this software and associated documentation files (the \"Software\"), to deal",
+"in the Software without restriction, including without limitation the rights",
+"to use, copy, modify, merge, publish, distribute, sublicense, and/or sell",
+"copies of the Software, and to permit persons to whom the Software is",
+"furnished to do so, subject to the following conditions:",
+"",
+"The above copyright notice and this permission notice shall be included in all",
+"copies or substantial portions of the Software.",
+"",
+"THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR",
+"IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,",
+"FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE",
+"AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER",
+"LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,",
+"OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE",
+"SOFTWARE."
+};
+
+  private static final DateFormat dateFormat = new SimpleDateFormat("EEEEE MMMMM yyyy HH:mm:ss.SSSZ");
   private static final List<Class<?>> classes = new ArrayList<>();
   private final TypeScriptCompiler tsCompiler;
   private final File dirGenerated;
@@ -168,6 +195,28 @@ public class RenderZomboid {
     renderLuaZomboid();
   }
 
+  private String generateTSLicense() {
+    Calendar calendar = Calendar.getInstance();
+    DocBuilder docBuilder = new DocBuilder();
+    for(String line : LICENSE) {
+      docBuilder.appendLine(line.replaceAll("\\$YEAR\\$", "" + calendar.get(Calendar.YEAR)));
+    }
+    docBuilder.appendLine();
+    docBuilder.appendLine("File generated at " + dateFormat.format(new Date()));
+    return docBuilder.build("");
+  }
+
+  private String generateLuaLicense() {
+    Calendar calendar = Calendar.getInstance();
+    StringBuilder built = new StringBuilder();
+    for(String line : LICENSE) {
+      built.append("--- ").append(line.replaceAll("\\$YEAR\\$", "" + calendar.get(Calendar.YEAR))).append('\n');
+    }
+    built.append("---\n");
+    built.append("--- File generated at ").append(dateFormat.format(new Date())).append('\n');
+    return built.toString();
+  }
+
   private void renderZomboidAsMultiFile() {
 
     Map<TypeScriptNamespace, String> compiledNamespaces = tsCompiler.compileNamespacesSeparately("  ");
@@ -187,10 +236,12 @@ public class RenderZomboid {
       referenceBuilder.append(s);
     }
 
-    write(new File(dirGenerated, "Zomboid_References.d.ts"), referenceBuilder.toString());
+    String output = generateTSLicense() + "\n\n";
+    output += referenceBuilder.toString();
+    write(new File(dirGenerated, "Zomboid_References.d.ts"), output);
 
     for(TypeScriptNamespace namespace : compiledNamespaces.keySet()) {
-      String output = "/** @noResolution @noSelfInFile */\n";
+      output = "/** @noResolution @noSelfInFile */\n";
       output += "/// <reference path=\"Zomboid_References.d.ts\" />\n";
       output += "declare module 'Zomboid' {\n";
       output += compiledNamespaces.get(namespace) + "\n";
@@ -219,7 +270,7 @@ public class RenderZomboid {
       String fileName = "Zomboid__" + namespace.getFullPath().replaceAll("\\.", "_") + ".d.ts";
       File fileZomboid = new File(dirGenerated, fileName);
       System.out.println("Writing file: " + fileName + "..");
-      write(fileZomboid, output);
+      write(fileZomboid, generateTSLicense() + "\n\n" + output);
     }
 
     String prepend = "/** @noResolution @noSelfInFile */\n";
@@ -300,11 +351,10 @@ public class RenderZomboid {
     File fileZomboid = new File(dirGenerated, "Zomboid_API.d.ts");
     String content = prepend + builderClasses + '\n' + builderTypes + '\n' + builderMethods + "}\n";
     System.out.println("Writing file: Zomboid_API.d.ts..");
-    write(fileZomboid, content);
+    write(fileZomboid, generateTSLicense() + "\n\n" + content);
   }
 
   private void renderZomboidAsOneFile() {
-
     String prepend = "/** @noResolution @noSelfInFile */\n";
     prepend += "declare module 'Zomboid' {";
     String output = tsCompiler.compile("  ");
@@ -382,7 +432,7 @@ public class RenderZomboid {
 
     File fileZomboid = new File(dirGenerated, "Zomboid_API.d.ts");
     String content = prepend + '\n' + output + '\n' + builderClasses + '\n' + builderTypes + '\n' + builderMethods + "\n}";
-    write(fileZomboid, content);
+    write(fileZomboid, generateTSLicense() + "\n\n" + content);
   }
 
   private void renderLuaZomboid() {
@@ -420,7 +470,7 @@ public class RenderZomboid {
     builder.append("return Exports\n");
 
     File fileZomboidLua = new File(dirGenerated, "Zomboid_API.lua");
-    write(fileZomboidLua, builder.toString());
+    write(fileZomboidLua, generateLuaLicense() + "\n" + builder);
   }
 
   static {

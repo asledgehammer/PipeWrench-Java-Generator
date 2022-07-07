@@ -10,7 +10,6 @@ public class TypeScriptGraph {
   final List<Class<?>> knownClasses = new ArrayList<>();
   private final TypeScriptCompiler compiler;
   private boolean readOnly = false;
-
   private boolean addedWhileWalking = false;
   private boolean walking = false;
 

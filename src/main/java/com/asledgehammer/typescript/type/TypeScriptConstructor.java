@@ -6,7 +6,6 @@ import com.asledgehammer.typescript.util.DocBuilder;
 
 import java.lang.reflect.*;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -34,9 +33,14 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
     Constructor<?>[] constructors = clazz.getConstructors();
     this.exists = constructors.length != 0;
 
-    Collections.addAll(sortedConstructors, constructors);
-    sortedConstructors.sort(Comparator.comparingInt(Constructor::getParameterCount));
+    for (Constructor<?> constructor : constructors) {
+      int modifiers = constructor.getModifiers();
+      if (Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers)) {
+        sortedConstructors.add(constructor);
+      }
+    }
 
+    sortedConstructors.sort(Comparator.comparingInt(Constructor::getParameterCount));
 
     this.minParamCount = exists ? Integer.MAX_VALUE : 0;
 
@@ -118,7 +122,7 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
     for (Constructor<?> constructor : sortedConstructors) {
       Parameter[] parameters = constructor.getParameters();
       if (parameters.length != 0) {
-        String compiled = "(";
+        StringBuilder compiled = new StringBuilder("(");
         for (Parameter parameter : constructor.getParameters()) {
           String tName =
               (parameter.isVarArgs()
@@ -131,9 +135,9 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
           }
           tName = TypeScriptElement.adaptType(tName);
           tName = TypeScriptElement.inspect(element.namespace.getGraph(), tName);
-          compiled += tName + ", ";
+          compiled.append(tName).append(", ");
         }
-        compiled = compiled.substring(0, compiled.length() - 2) + ')';
+        compiled = new StringBuilder(compiled.substring(0, compiled.length() - 2) + ')');
         docBuilder.appendLine(" - " + compiled);
       } else {
         docBuilder.appendLine(" - (Empty Constructor)");
@@ -155,20 +159,20 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
     builder.append("constructor");
 
     builder.append('(');
-    String s = "";
+    StringBuilder s = new StringBuilder();
     for (int i = 0; i < allParameterTypes.size(); i++) {
 
       String sEntry = "arg" + i;
       if (i > minParamCount - 1) sEntry += '?';
       sEntry += ": ";
 
-      String sParams = "";
+      StringBuilder sParams = new StringBuilder();
       List<String> argSlot = allParameterTypes.get(i);
       for (String argSlotEntry : argSlot) {
-        sParams += argSlotEntry + " | ";
+        sParams.append(argSlotEntry).append(" | ");
       }
 
-      s += sEntry + sParams.substring(0, sParams.length() - 3);
+      s.append(sEntry).append(sParams.substring(0, sParams.length() - 3));
 
       boolean isPrimitive = false;
       List<Boolean> paramPrimitiveList = canPassNull.get(i);
@@ -178,12 +182,11 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
           break;
         }
       }
-      if (!isPrimitive) s += " | null";
-
-      s += ", ";
+      if (!isPrimitive) s.append(" | null");
+      s.append(", ");
     }
 
-    if (s.length() != 0) s = s.substring(0, s.length() - 2);
+    if (s.length() != 0) s = new StringBuilder(s.substring(0, s.length() - 2));
 
     builder.append(s).append(");");
     return builder.toString();

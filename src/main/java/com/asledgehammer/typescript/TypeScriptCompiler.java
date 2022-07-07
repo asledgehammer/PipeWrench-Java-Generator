@@ -7,6 +7,7 @@ import com.asledgehammer.typescript.type.TypeScriptNamespace;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings("unused")
 public class TypeScriptCompiler {
 
   private final TypeScriptSettings settings;

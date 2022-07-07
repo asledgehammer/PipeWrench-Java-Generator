@@ -5,6 +5,7 @@ import com.asledgehammer.typescript.settings.Recursion;
 
 import java.util.*;
 
+@SuppressWarnings("unused")
 public class TypeScriptNamespace
     implements TypeScriptResolvable, TypeScriptWalkable, TypeScriptCompilable {
 
@@ -12,14 +13,12 @@ public class TypeScriptNamespace
   public final Map<String, TypeScriptElement> elements = new HashMap<>();
   private final TypeScriptNamespace parent;
   private final TypeScriptGraph graph;
-  private final String path;
   private final String fullPath;
   private final String name;
 
   public TypeScriptNamespace(TypeScriptGraph graph, TypeScriptNamespace parent, String path) {
     this.graph = graph;
     this.parent = parent;
-    this.path = path;
     String[] split = path.split("\\.");
     String name = split[split.length - 1];
 
@@ -113,7 +112,7 @@ public class TypeScriptNamespace
 
     if (!valid) return "";
 
-//    namespaces.remove("function");
+    //    namespaces.remove("function");
 
     StringBuilder builder = new StringBuilder(prefixOriginal);
 

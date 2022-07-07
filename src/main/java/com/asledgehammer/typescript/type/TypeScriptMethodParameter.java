@@ -8,6 +8,7 @@ import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 
+@SuppressWarnings("unused")
 public class TypeScriptMethodParameter
         implements TypeScriptWalkable, TypeScriptCompilable {
 
@@ -45,7 +46,7 @@ public class TypeScriptMethodParameter
 
         // Add any missing parameters if not defined.
         if (!returnType.contains("<")) {
-            TypeVariable[] params = parameter.getType().getTypeParameters();
+            TypeVariable<?>[] params = parameter.getType().getTypeParameters();
             if (params.length != 0) {
                 returnType += "<";
                 for (int i = 0; i < params.length; i++) {

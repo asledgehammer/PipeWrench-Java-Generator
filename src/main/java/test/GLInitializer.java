@@ -12,8 +12,6 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class GLInitializer {
-  // The window handle
-  private static long window;
 
   private static boolean initiated = false;
 
@@ -36,7 +34,8 @@ public class GLInitializer {
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); // the window will be resizable
 
     // Create the window
-    window = glfwCreateWindow(300, 300, "Hello World!", NULL, NULL);
+    // The window handle
+    long window = glfwCreateWindow(300, 300, "Hello World!", NULL, NULL);
     if (window == NULL) throw new RuntimeException("Failed to create the GLFW window");
 
     // Get the thread stack and push a new frame
@@ -52,7 +51,7 @@ public class GLInitializer {
 
       // Center the window
       glfwSetWindowPos(
-          window, (vidmode.width() - pWidth.get(0)) / 2, (vidmode.height() - pHeight.get(0)) / 2);
+              window, (vidmode.width() - pWidth.get(0)) / 2, (vidmode.height() - pHeight.get(0)) / 2);
     } // the stack frame is popped automatically
 
     // Make the OpenGL context current

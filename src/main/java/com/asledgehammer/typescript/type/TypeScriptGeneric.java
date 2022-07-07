@@ -6,10 +6,10 @@ import java.lang.reflect.TypeVariable;
 
 public class TypeScriptGeneric implements TypeScriptWalkable, TypeScriptCompilable {
 
-  private final TypeVariable type;
+  private final TypeVariable<?> type;
   private boolean walked = false;
 
-  public TypeScriptGeneric(TypeVariable type) {
+  public TypeScriptGeneric(TypeVariable<?> type) {
     this.type = type;
   }
 

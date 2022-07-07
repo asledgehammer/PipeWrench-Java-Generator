@@ -8,7 +8,8 @@ public class TypeScriptSettings {
   public final List<Method> methodsBlackList = new ArrayList<>();
   public final List<String> methodsBlackListByPath = new ArrayList<>();
   public Recursion recursion = Recursion.NONE;
-  public boolean renderFields = true;
+  public boolean renderNonStaticFields = false;
+  public boolean renderStaticFields = true;
   public boolean useNull = false;
 
     public boolean isBlackListed(Method method) {

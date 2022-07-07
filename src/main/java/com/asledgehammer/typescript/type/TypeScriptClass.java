@@ -25,14 +25,10 @@ public class TypeScriptClass extends TypeScriptElement {
     System.out.println("Walking " + getName());
     walkConstructors(graph);
     walkGenericParameters(graph);
-    if (getNamespace().getGraph().getCompiler().getSettings().renderFields) {
-      walkFields(graph);
-    }
+    walkFields(graph);
     walkMethods(graph);
     walkSub(graph);
-    if (getNamespace().getGraph().getCompiler().getSettings().renderFields) {
-      checkDuplicateFieldMethods(graph);
-    }
+    checkDuplicateFieldMethods(graph);
     this.walked = true;
   }
 
@@ -44,9 +40,11 @@ public class TypeScriptClass extends TypeScriptElement {
 
   private void checkDuplicateFieldMethods(TypeScriptGraph ignored) {
 
-    if (!getNamespace().getGraph().getCompiler().getSettings().renderFields) {
+    TypeScriptSettings settings = getNamespace().getGraph().getCompiler().getSettings();
+    if (!settings.renderStaticFields && !settings.renderNonStaticFields) {
       return;
     }
+
     List<String> names = new ArrayList<>(fields.keySet());
     for (String fieldName : names) {
       if (methods.containsKey(fieldName)) {
@@ -82,12 +80,20 @@ public class TypeScriptClass extends TypeScriptElement {
 
   private void walkFields(TypeScriptGraph graph) {
     if (clazz == null) return;
-    if (!getNamespace().getGraph().getCompiler().getSettings().renderFields) {
+    TypeScriptSettings settings = getNamespace().getGraph().getCompiler().getSettings();
+    if (!settings.renderStaticFields && !settings.renderNonStaticFields) {
       return;
     }
     fields.clear();
     for (Field field : clazz.getDeclaredFields()) {
       if (Modifier.isPublic(field.getModifiers())) {
+
+        boolean isStatic = Modifier.isStatic(field.getModifiers());
+        if ((isStatic && !settings.renderStaticFields)
+            || (!isStatic && !settings.renderNonStaticFields)) {
+          continue;
+        }
+
         fields.put(field.getName(), new TypeScriptField(this, field));
       }
     }
@@ -119,84 +125,12 @@ public class TypeScriptClass extends TypeScriptElement {
     for (TypeScriptMethodCluster method : this.staticMethods.values()) method.walk(graph);
   }
 
-  //  public String compileStaticOnly(String prefixOriginal) {
-  //    if (clazz == null) return "";
-  //    String prefix = prefixOriginal + "  ";
-  //
-  //    String name = clazz.getSimpleName();
-  //    if (name.contains("$")) {
-  //      String[] split = name.split("\\$");
-  //      name = split[split.length - 1];
-  //    }
-  //
-  //    StringBuilder stringBuilder = new StringBuilder(prefixOriginal);
-  //    stringBuilder.append("// ");
-  //
-  //    if (clazz.isInterface()) {
-  //      stringBuilder.append("[INTERFACE] ");
-  //    } else {
-  //      stringBuilder.append("[");
-  //      if (Modifier.isAbstract(clazz.getModifiers())) {
-  //        stringBuilder.append("ABSTRACT ");
-  //      }
-  //      stringBuilder.append("CLASS] ");
-  //    }
-  //
-  //    stringBuilder.append(name);
-  //    Type genericSuperclass = clazz.getGenericSuperclass();
-  //    if (genericSuperclass != null) {
-  //      stringBuilder.append(" extends ").append(clazz.getGenericSuperclass().getTypeName());
-  //    } else {
-  //      Class<?> superClazz = clazz.getSuperclass();
-  //      if (superClazz != null) {
-  //        stringBuilder.append(" extends ").append(superClazz.getName());
-  //      }
-  //    }
-  //
-  //    stringBuilder.append("\n").append(prefixOriginal);
-  //    stringBuilder.append("export class ").append(name);
-  //    stringBuilder.append(" {\n");
-  //    stringBuilder.append(prefix).append("private constructor();\n");
-  //
-  //    if (!fields.isEmpty()) {
-  //      List<String> names = new ArrayList<>(fields.keySet());
-  //      names.sort(Comparator.naturalOrder());
-  //      for (String _name : names) {
-  //        TypeScriptField field = fields.get(_name);
-  //        if (field.isStatic()) {
-  //          stringBuilder.append(field.compile(prefix)).append('\n');
-  //        }
-  //      }
-  //      stringBuilder.append('\n');
-  //    }
-  //
-  //    if (constructor.exists) {
-  //      stringBuilder.append(constructor.compile(prefix)).append("\n\n");
-  //    }
-  //
-  //    if (!methods.isEmpty()) {
-  //      List<String> names = new ArrayList<>(methods.keySet());
-  //      names.sort(Comparator.naturalOrder());
-  //      for (String _name : names) {
-  //        List<TypeScriptMethod> methods = this.methods.get(_name);
-  //        for (TypeScriptMethod method : methods) {
-  //          if (method.isStatic()) {
-  //            stringBuilder.append(method.compile(prefix)).append('\n');
-  //          }
-  //        }
-  //      }
-  //    }
-  //
-  //    if (stringBuilder.toString().endsWith("\n"))
-  //      stringBuilder.setLength(stringBuilder.length() - 1);
-  //    stringBuilder.append(prefixOriginal).append("}");
-  //    return stringBuilder.toString();
-  //  }
-
   @Override
   public String compile(String prefixOriginal) {
 
     if (clazz == null) return "";
+
+    TypeScriptSettings settings = getNamespace().getGraph().getCompiler().getSettings();
 
     DocBuilder docBuilder = new DocBuilder();
     docBuilder.appendLine("@customConstructor " + clazz.getSimpleName() + ".new");
@@ -243,33 +177,24 @@ public class TypeScriptClass extends TypeScriptElement {
       compiledParams = compiledParams.substring(0, compiledParams.length() - 2) + '>';
     }
     stringBuilder.append(compiledParams);
-
-    //    if (superClazz != null && !superClazz.equals(Object.class)) {
-    //      stringBuilder.append(" extends ").append(superClazz.getName());
-    //    } else if (clazz.isInterface()) {
-    //      Class<?>[] interfaces = clazz.getInterfaces();
-    //      if (interfaces.length == 1) {
-    //        stringBuilder.append(" extends ").append(interfaces[0].getName());
-    //      }
-    //    }
-
     stringBuilder.append(" {\n");
 
-    if (getNamespace().getGraph().getCompiler().getSettings().renderFields) {
+    if (settings.renderStaticFields || settings.renderNonStaticFields) {
       if (!fields.isEmpty()) {
         List<String> names = new ArrayList<>(fields.keySet());
         names.sort(Comparator.naturalOrder());
         // Static Field(s)
         for (String _name : names) {
           TypeScriptField field = fields.get(_name);
-          if (field.isStatic()) {
+
+          if (field.isStatic() && settings.renderStaticFields) {
             stringBuilder.append(field.compile(prefix)).append('\n');
           }
         }
         // Non-Static Field(s)
         for (String name : names) {
           TypeScriptField field = fields.get(name);
-          if (!field.isStatic()) {
+          if (!field.isStatic() && settings.renderNonStaticFields) {
             stringBuilder.append(field.compile(prefix)).append('\n');
           }
         }
@@ -306,8 +231,7 @@ public class TypeScriptClass extends TypeScriptElement {
     if (!stringBuilder.toString().endsWith("\n")) {
       stringBuilder.append('\n');
     }
-    //    if (stringBuilder.toString().endsWith("\n"))
-    //      stringBuilder.setLength(stringBuilder.length() - 1);
+
     stringBuilder.append(prefixOriginal).append("}");
     return stringBuilder.toString();
   }

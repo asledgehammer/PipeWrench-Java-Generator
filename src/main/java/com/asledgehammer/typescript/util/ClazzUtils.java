@@ -4,6 +4,7 @@ import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("unused")
 public class ClazzUtils {
 
   private ClazzUtils() {
@@ -13,14 +14,14 @@ public class ClazzUtils {
   public String removeDuplicateNamespaces(String input) {
     if(input == null || !input.contains(".")) return input;
     String[] split = input.split("\\.");
-    String built = split[0];
+    StringBuilder built = new StringBuilder(split[0]);
     if (split.length != 1) {
       for (int index = 1; index < split.length; index++) {
          if(split[index - 1].equals(split[index])) continue;
-         built += '.' + split[index];
+         built.append('.').append(split[index]);
       }
     }
-    return built;
+    return built.toString();
   }
 
   public static List<String> extractTypeDeclarations(Class<?> clazz) {
@@ -75,7 +76,7 @@ public class ClazzUtils {
     String isStatic = Modifier.isStatic(mods) ? "static " : "";
     String isFinal = Modifier.isFinal(mods) ? "final " : "";
     String isAbstract = Modifier.isAbstract(mods) ? "abstract " : "";
-    String type = "";
+    String type;
     if (clazz.isInterface()) type = "interface ";
     else if (clazz.isEnum()) type = "enum ";
     else type = "class ";
@@ -173,25 +174,25 @@ public class ClazzUtils {
     s = s.replaceAll("\\? extends ", "").replaceAll("\\? super ", "").replaceAll("capture of ", "");
 
     boolean hasNestedArgs = indexOf != -1;
-    String nestedArgsString = "";
+    StringBuilder nestedArgsString = new StringBuilder();
 
     if (hasNestedArgs) {
       List<String> nestedArgs = extractNestedArgs(s);
       if (!nestedArgs.isEmpty()) {
-        nestedArgsString += "<";
+        nestedArgsString.append("<");
         for (String inner : nestedArgs) {
           if(inner == null || inner.isEmpty()) continue;
           if (inner.indexOf('<') != -1) {
-            nestedArgsString += walkTypesRecursively(genericMap, declClazz, inner) + ", ";
+            nestedArgsString.append(walkTypesRecursively(genericMap, declClazz, inner)).append(", ");
           } else {
             if (genericMap != null) {
-              nestedArgsString += genericMap.resolveDeclaredType(declClazz, inner) + ", ";
+              nestedArgsString.append(genericMap.resolveDeclaredType(declClazz, inner)).append(", ");
             } else {
-              nestedArgsString += inner + ", ";
+              nestedArgsString.append(inner).append(", ");
             }
           }
         }
-        nestedArgsString = nestedArgsString.substring(0, nestedArgsString.length() - 2) + ">";
+        nestedArgsString = new StringBuilder(nestedArgsString.substring(0, nestedArgsString.length() - 2) + ">");
       }
     }
 

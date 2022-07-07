@@ -9,6 +9,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.TypeVariable;
 
+@SuppressWarnings("unused")
 public class TypeScriptField implements TypeScriptCompilable, TypeScriptWalkable {
 
   private final TypeScriptElement container;
@@ -53,7 +54,6 @@ public class TypeScriptField implements TypeScriptCompilable, TypeScriptWalkable
     }
 
     this.adaptedReturn = TypeScriptElement.adaptType(this.adaptedReturn);
-
     this.adaptedReturn = TypeScriptElement.inspect(graph, this.adaptedReturn);
 
     try {
@@ -63,7 +63,7 @@ public class TypeScriptField implements TypeScriptCompilable, TypeScriptWalkable
     }
 
     if (!adaptedReturn.contains("<")) {
-      TypeVariable[] params = field.getType().getTypeParameters();
+      TypeVariable<?>[] params = field.getType().getTypeParameters();
       if (params.length != 0) {
         adaptedReturn += "<";
         for (int i = 0; i < params.length; i++) {

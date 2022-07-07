@@ -74,30 +74,31 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
             allParameterTypes.add(argSlot);
           }
 
-          String tName = argType.getTypeName();
+          StringBuilder tName = new StringBuilder(argType.getTypeName());
           if (genericMap != null) {
-            tName = ClazzUtils.walkTypesRecursively(genericMap, method.getDeclaringClass(), tName);
+            tName =
+                new StringBuilder(
+                    ClazzUtils.walkTypesRecursively(
+                        genericMap, method.getDeclaringClass(), tName.toString()));
           }
 
-          tName = TypeScriptElement.inspect(graph, tName);
-          tName = TypeScriptElement.adaptType(tName);
+          tName = new StringBuilder(TypeScriptElement.inspect(graph, tName.toString()));
+          tName = new StringBuilder(TypeScriptElement.adaptType(tName.toString()));
 
           graph.add(parameters[i].getType());
 
           // Add any missing parameters if not defined.
-          if (!tName.contains("<")) {
-            TypeVariable[] params = parameters[i].getType().getTypeParameters();
+          if (!tName.toString().contains("<")) {
+            TypeVariable<?>[] params = parameters[i].getType().getTypeParameters();
             if (params.length != 0) {
-              tName += "<";
-              for (int k = 0; k < params.length; k++) {
-                tName += "any, ";
-              }
-              tName = tName.substring(0, tName.length() - 2) + ">";
+              tName.append("<");
+              tName.append("any, ".repeat(params.length));
+              tName = new StringBuilder(tName.substring(0, tName.length() - 2) + ">");
             }
           }
 
-          if (!argSlot.contains(tName)) {
-            argSlot.add(tName);
+          if (!argSlot.contains(tName.toString())) {
+            argSlot.add(tName.toString());
           }
         }
       }
@@ -140,32 +141,31 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
         graph.add(parameter.getType());
       }
 
-      String returnType;
+      StringBuilder returnType;
       if (genericMap != null) {
         Class<?> declClazz = method.getDeclaringClass();
         String before = method.getGenericReturnType().getTypeName();
-        returnType = ClazzUtils.walkTypesRecursively(genericMap, declClazz, before);
+        returnType =
+            new StringBuilder(ClazzUtils.walkTypesRecursively(genericMap, declClazz, before));
       } else {
-        returnType = method.getGenericReturnType().getTypeName();
+        returnType = new StringBuilder(method.getGenericReturnType().getTypeName());
       }
 
       if (!method.getGenericReturnType().getClass().isPrimitive()) {
         this.returnTypeContainsNonPrimitive = true;
       }
 
-      returnType = TypeScriptElement.adaptType(returnType);
-      returnType = TypeScriptElement.inspect(graph, returnType);
+      returnType = new StringBuilder(TypeScriptElement.adaptType(returnType.toString()));
+      returnType = new StringBuilder(TypeScriptElement.inspect(graph, returnType.toString()));
 
       Class<?> returnClazz = method.getReturnType();
 
-      if (!returnType.contains("<")) {
+      if (!returnType.toString().contains("<")) {
         TypeVariable<?>[] params = returnClazz.getTypeParameters();
         if (params.length != 0) {
-          returnType += "<";
-          for (int i = 0; i < params.length; i++) {
-            returnType += "any, ";
-          }
-          returnType = returnType.substring(0, returnType.length() - 2) + ">";
+          returnType.append("<");
+          returnType.append("any, ".repeat(params.length));
+          returnType = new StringBuilder(returnType.substring(0, returnType.length() - 2) + ">");
         }
       }
 
@@ -180,11 +180,11 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
           || returnClazz.equals(Object[][][][][][][][].class)
           || returnClazz.equals(Object[][][][][][][][][].class)
           || returnClazz.equals(Object[][][][][][][][][][].class)) {
-        returnType = "any";
+        returnType = new StringBuilder("any");
       }
 
-      if (!this.allReturnTypes.contains(returnType)) {
-        this.allReturnTypes.add(returnType);
+      if (!this.allReturnTypes.contains(returnType.toString())) {
+        this.allReturnTypes.add(returnType.toString());
       }
 
       graph.add(returnClazz);
@@ -202,14 +202,13 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     docBuilder.appendLine("Method Parameters: ");
 
     for (Method method : sortedMethods) {
-
       if (!methodName.equals(method.getName())) continue;
       if (Modifier.isStatic(method.getModifiers()) != isStatic) continue;
 
       Parameter[] parameters = method.getParameters();
 
       if (parameters.length != 0) {
-        String compiled = "(";
+        StringBuilder compiled = new StringBuilder("(");
         for (Parameter parameter : method.getParameters()) {
           String tName =
               (parameter.isVarArgs()
@@ -222,9 +221,9 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
           }
           tName = TypeScriptElement.adaptType(tName);
           tName = TypeScriptElement.inspect(element.namespace.getGraph(), tName);
-          compiled += tName + ", ";
+          compiled.append(tName).append(", ");
         }
-        compiled = compiled.substring(0, compiled.length() - 2) + ')';
+        compiled = new StringBuilder(compiled.substring(0, compiled.length() - 2) + ')');
         String returnType =
             ClazzUtils.walkTypesRecursively(
                 element.genericMap, element.clazz, method.getGenericReturnType().getTypeName());
@@ -255,10 +254,8 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     if (isStatic) builder.append("static ");
     builder.append(methodName);
 
-    String genericParamsBody = "";
-
+    StringBuilder genericParamsBody;
     List<String> genericTypeNames = new ArrayList<>();
-
     List<TypeVariable<?>> genericTypes = new ArrayList<>();
     for (Method m : sortedMethods) {
       TypeVariable<?>[] tvs = m.getTypeParameters();
@@ -272,29 +269,29 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     }
 
     if (genericTypes.size() != 0) {
-      genericParamsBody = "<";
+      genericParamsBody = new StringBuilder("<");
       for (TypeVariable<?> variable : genericTypes) {
-        genericParamsBody += variable.getTypeName() + ", ";
+        genericParamsBody.append(variable.getTypeName()).append(", ");
       }
-      genericParamsBody = genericParamsBody.substring(0, genericParamsBody.length() - 2) + '>';
+      genericParamsBody =
+          new StringBuilder(genericParamsBody.substring(0, genericParamsBody.length() - 2) + '>');
       builder.append(genericParamsBody);
     }
 
     builder.append('(');
-    String s = "";
+    StringBuilder s = new StringBuilder();
     for (int i = 0; i < allParameterTypes.size(); i++) {
 
       String sEntry = "arg" + i;
       if (i > minParamCount - 1) sEntry += '?';
       sEntry += ": ";
 
-      String sParams = "";
+      StringBuilder sParams = new StringBuilder();
       List<Parameter> params = allParameters.get(i);
       List<String> argSlot = allParameterTypes.get(i);
       ComplexGenericMap genericMap = element.genericMap;
 
       boolean hasAny = false;
-
       for (String argSlotEntry : argSlot) {
         if (argSlotEntry.equals("any")) {
           hasAny = true;
@@ -303,7 +300,7 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
       }
 
       if (hasAny) {
-        s += sEntry + "any";
+        s.append(sEntry).append("any");
       } else {
         for (int j = 0; j < argSlot.size(); j++) {
           String argSlotEntry = argSlot.get(j);
@@ -325,67 +322,65 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
           } else {
             transformedArg = ClazzUtils.walkTypesRecursively(genericMap, methodClass, argSlotEntry);
           }
-          sParams += transformedArg + " | ";
+          sParams.append(transformedArg).append(" | ");
         }
 
-        s += sEntry + sParams.substring(0, sParams.length() - 3);
+        s.append(sEntry).append(sParams.substring(0, sParams.length() - 3));
       }
 
       if (settings.useNull) {
         List<Boolean> paramPrimitiveList = canPassNull.get(i);
         for (Boolean aBoolean : paramPrimitiveList) {
           if (aBoolean) {
-            s += " | null";
+            s.append(" | null");
             break;
           }
         }
       }
-
-      s += ", ";
+      s.append(", ");
     }
 
-    if (s.length() != 0) s = s.substring(0, s.length() - 2);
+    if (s.length() != 0) s = new StringBuilder(s.substring(0, s.length() - 2));
     builder.append(s).append("): ");
 
-    String returned = "";
+    StringBuilder returned = new StringBuilder();
     boolean hasAny = false;
     for (String returnType : allReturnTypes) {
       if (returnType.equals("any")) {
         hasAny = true;
-        returned = "any";
+        returned = new StringBuilder("any");
         break;
       }
     }
 
     if (!hasAny) {
       for (String returnType : allReturnTypes) {
-        if (!returned.isEmpty()) returned += " | ";
-        returned += returnType;
+        if (returned.length() > 0) returned.append(" | ");
+        returned.append(returnType);
       }
     }
 
     if (settings.useNull && returnTypeContainsNonPrimitive) {
-      if (!returned.isEmpty()) {
-        returned += " | ";
+      if (returned.length() > 0) {
+        returned.append(" | ");
       }
-      returned += "null";
+      returned.append("null");
     }
 
     builder.append(returned).append(';');
-
     return builder.toString();
   }
 
   public String compileLua(String table) {
     String compiled = "function " + table + '.';
-    String methodBody = methodName + "(";
+    StringBuilder methodBody = new StringBuilder(methodName + "(");
     if (!allParameters.isEmpty()) {
       for (int i = 0; i < this.allParameters.size(); i++) {
-        methodBody += "arg" + (i + 1) + ", ";
+        methodBody.append("arg").append(i + 1).append(", ");
       }
-      methodBody = methodBody.substring(0, methodBody.length() - 2);
+      methodBody = new StringBuilder(methodBody.substring(0, methodBody.length() - 2));
     }
-    methodBody += ")";
+    methodBody.append(")");
     compiled += methodBody;
     compiled += " return " + methodBody + " end";
     return compiled;
@@ -396,7 +391,7 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     builder.append(walkDocs(prefix)).append('\n');
     builder.append(prefix).append("export function ").append(methodName);
 
-    String genericParamsBody;
+    StringBuilder genericParamsBody;
     List<String> genericTypeNames = new ArrayList<>();
     List<TypeVariable<?>> genericTypes = new ArrayList<>();
     for (Method m : sortedMethods) {
@@ -411,36 +406,38 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     }
 
     if (genericTypes.size() != 0) {
-      genericParamsBody = "<";
+      genericParamsBody = new StringBuilder("<");
       for (TypeVariable<?> variable : genericTypes) {
-        genericParamsBody += variable.getTypeName() + ", ";
+        genericParamsBody.append(variable.getTypeName()).append(", ");
       }
-      genericParamsBody = genericParamsBody.substring(0, genericParamsBody.length() - 2) + '>';
+      genericParamsBody =
+          new StringBuilder(genericParamsBody.substring(0, genericParamsBody.length() - 2) + '>');
       builder.append(genericParamsBody);
     }
 
     builder.append('(');
-    String s = "";
+    StringBuilder s = new StringBuilder();
     for (int i = 0; i < allParameterTypes.size(); i++) {
 
       String sEntry = "arg" + i;
       if (i > minParamCount - 1) sEntry += '?';
       sEntry += ": ";
 
-      String sParams = "";
+      StringBuilder sParams = new StringBuilder();
       List<Parameter> params = allParameters.get(i);
       List<String> argSlot = allParameterTypes.get(i);
       for (int j = 0; j < argSlot.size(); j++) {
         String argSlotEntry = argSlot.get(j);
-        sParams +=
-            ClazzUtils.walkTypesRecursively(
+        sParams
+            .append(
+                ClazzUtils.walkTypesRecursively(
                     element.genericMap,
                     params.get(j).getDeclaringExecutable().getDeclaringClass(),
-                    argSlotEntry)
-                + " | ";
+                    argSlotEntry))
+            .append(" | ");
       }
 
-      s += sEntry + sParams.substring(0, sParams.length() - 3);
+      s.append(sEntry).append(sParams.substring(0, sParams.length() - 3));
 
       boolean isPrimitive = false;
       List<Boolean> paramPrimitiveList = canPassNull.get(i);
@@ -450,32 +447,27 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
           break;
         }
       }
-      if (!isPrimitive) s += " | null";
+      if (!isPrimitive) s.append(" | null");
 
-      s += ", ";
+      s.append(", ");
     }
 
-    if (s.length() != 0) s = s.substring(0, s.length() - 2);
+    if (s.length() != 0) s = new StringBuilder(s.substring(0, s.length() - 2));
 
     builder.append(s).append("): ");
 
-    String returned = "";
+    StringBuilder returned = new StringBuilder();
     for (String returnType : allReturnTypes) {
-      if (!returned.isEmpty()) {
-        returned += " | ";
-      }
-      returned += returnType;
+      if (returned.length() > 0) returned.append(" | ");
+      returned.append(returnType);
     }
 
     if (returnTypeContainsNonPrimitive) {
-      if (!returned.isEmpty()) {
-        returned += " | ";
-      }
-      returned += "null";
+      if (returned.length() > 0) returned.append(" | ");
+      returned.append("null");
     }
 
     builder.append(returned).append(';');
-
     return builder.toString();
   }
 }

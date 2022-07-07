@@ -24,12 +24,12 @@ public abstract class TypeScriptElement
 
     if (this.clazz != null) {
       Class<?> enclosingClass = clazz.getEnclosingClass();
-      String fullName = this.clazz.getSimpleName();
+      StringBuilder fullName = new StringBuilder(this.clazz.getSimpleName());
       while (enclosingClass != null) {
-        fullName = enclosingClass.getSimpleName() + '$' + fullName;
+        fullName.insert(0, enclosingClass.getSimpleName() + '$');
         enclosingClass = enclosingClass.getEnclosingClass();
       }
-      this.name = fullName;
+      this.name = fullName.toString();
     }
   }
 
@@ -187,11 +187,12 @@ public abstract class TypeScriptElement
       }
     }
 
+    StringBuilder stringBuilder = new StringBuilder(string);
     while (arrayDimCount > 0) {
-      string += "[]";
+      stringBuilder.append("[]");
       arrayDimCount--;
     }
-
+    string = stringBuilder.toString();
     return string;
   }
 

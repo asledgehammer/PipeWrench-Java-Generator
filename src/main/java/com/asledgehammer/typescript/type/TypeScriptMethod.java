@@ -9,6 +9,7 @@ import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("unused")
 public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkable {
 
   private final TypeScriptElement container;
@@ -75,7 +76,7 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
     Class<?> returnClazz = method.getReturnType();
 
     if (!returnType.contains("<")) {
-      TypeVariable[] params = returnClazz.getTypeParameters();
+      TypeVariable<?>[] params = returnClazz.getTypeParameters();
       if (params.length != 0) {
         returnType += "<";
         for (int i = 0; i < params.length; i++) {
@@ -108,7 +109,7 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
       if (!doc.isEmpty()) {
         doc.appendLine();
       }
-      String compiled = "(";
+      StringBuilder compiled = new StringBuilder("(");
       for (Parameter parameter : parameters) {
         String tName =
             (parameter.isVarArgs()
@@ -121,41 +122,42 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
         }
         tName = TypeScriptElement.adaptType(tName);
         tName = TypeScriptElement.inspect(container.namespace.getGraph(), tName);
-        compiled += tName + ", ";
+        compiled.append(tName).append(", ");
       }
       compiled =
-          compiled.substring(0, compiled.length() - 2)
-              + "): "
-              + method.getReturnType().getSimpleName();
+          new StringBuilder(
+              compiled.substring(0, compiled.length() - 2)
+                  + "): "
+                  + method.getReturnType().getSimpleName());
 
-      doc.appendLine(compiled);
+      doc.appendLine(compiled.toString());
     }
 
     if (!doc.isEmpty()) {
       builder.append(doc.build(prefix)).append('\n');
     }
 
-    String compiled = prefix + (bStatic ? "static " : "") + method.getName();
+    StringBuilder compiled =
+        new StringBuilder(prefix + (bStatic ? "static " : "") + method.getName());
 
     if (genericTypes.length != 0) {
-      compiled += "<";
-      for (int i = 0; i < genericTypes.length; i++) {
-        Type genericType = genericTypes[i];
-        compiled += genericType.getTypeName() + ", ";
+      compiled.append("<");
+      for (Type genericType : genericTypes) {
+        compiled.append(genericType.getTypeName()).append(", ");
       }
-      compiled = compiled.substring(0, compiled.length() - 2);
-      compiled += ">";
+      compiled = new StringBuilder(compiled.substring(0, compiled.length() - 2));
+      compiled.append(">");
     }
 
-    compiled += "(";
+    compiled.append("(");
 
     if (!this.parameters.isEmpty()) {
       for (TypeScriptMethodParameter parameter : this.parameters) {
-        compiled += parameter.compile("") + ", ";
+        compiled.append(parameter.compile("")).append(", ");
       }
-      compiled = compiled.substring(0, compiled.length() - 2);
+      compiled = new StringBuilder(compiled.substring(0, compiled.length() - 2));
     }
-    compiled += "): " + returnType + ';';
+    compiled.append("): ").append(returnType).append(';');
 
     builder.append(compiled);
     return builder.toString();
@@ -168,7 +170,7 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
     if (bStatic) doc.appendLine("@noSelf");
     if (!parameters.isEmpty()) {
       if (!doc.isEmpty()) doc.appendLine();
-      String compiled = "(";
+      StringBuilder compiled = new StringBuilder("(");
 
       ComplexGenericMap genericMap = container.genericMap;
       Parameter[] parameters = method.getParameters();
@@ -184,49 +186,50 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
         }
         tName = TypeScriptElement.adaptType(tName);
         tName = TypeScriptElement.inspect(container.namespace.getGraph(), tName);
-        compiled += tName + ", ";
+        compiled.append(tName).append(", ");
       }
       compiled =
-          compiled.substring(0, compiled.length() - 2)
-              + "): "
-              + method.getReturnType().getSimpleName();
+          new StringBuilder(
+              compiled.substring(0, compiled.length() - 2)
+                  + "): "
+                  + method.getReturnType().getSimpleName());
 
-      doc.appendLine(compiled);
+      doc.appendLine(compiled.toString());
     }
 
     if (!doc.isEmpty()) {
       builder.append(doc.build(prefix)).append('\n');
     }
-    String compiled = "export function " + method.getName() + "(";
+    StringBuilder compiled = new StringBuilder("export function " + method.getName() + "(");
 
     if (!parameters.isEmpty()) {
-      compiled += "this: void, ";
+      compiled.append("this: void, ");
       for (TypeScriptMethodParameter parameter : parameters) {
-        compiled += parameter.compile("") + ", ";
+        compiled.append(parameter.compile("")).append(", ");
       }
-      compiled = compiled.substring(0, compiled.length() - 2);
+      compiled = new StringBuilder(compiled.substring(0, compiled.length() - 2));
     }
-    compiled += "): " + returnType;
+    compiled.append("): ").append(returnType);
     return builder.append(compiled).toString();
   }
 
   public String compileLua(String table) {
     String compiled = "function " + table + '.';
-    String methodBody = method.getName() + "(";
+    StringBuilder methodBody = new StringBuilder(method.getName() + "(");
     if (!parameters.isEmpty()) {
       for (TypeScriptMethodParameter parameter : parameters) {
-        methodBody += parameter.name + ", ";
+        methodBody.append(parameter.name).append(", ");
       }
-      methodBody = methodBody.substring(0, methodBody.length() - 2);
+      methodBody = new StringBuilder(methodBody.substring(0, methodBody.length() - 2));
     }
-    methodBody += ")";
+    methodBody.append(")");
 
     compiled += methodBody;
 
     if (!returnType.equalsIgnoreCase("void")) {
       compiled += " return " + methodBody;
     } else {
-      compiled += ' ' + methodBody;
+      compiled += ' ' + methodBody.toString();
     }
 
     compiled += " end";
@@ -244,5 +247,4 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
   public boolean hasWalked() {
     return walked;
   }
-
 }
