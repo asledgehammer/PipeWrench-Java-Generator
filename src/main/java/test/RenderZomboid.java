@@ -236,8 +236,7 @@ new String[] {"MIT License",
       referenceBuilder.append(s);
     }
 
-    String output = generateTSLicense() + "\n\n";
-    output += referenceBuilder.toString();
+    String output = generateTSLicense() + "\n\n" + referenceBuilder;
     write(new File(dirGenerated, "Zomboid_References.d.ts"), output);
 
     for(TypeScriptNamespace namespace : compiledNamespaces.keySet()) {
@@ -268,9 +267,8 @@ new String[] {"MIT License",
       output += "}\n";
 
       String fileName = "Zomboid__" + namespace.getFullPath().replaceAll("\\.", "_") + ".d.ts";
-      File fileZomboid = new File(dirGenerated, fileName);
       System.out.println("Writing file: " + fileName + "..");
-      write(fileZomboid, generateTSLicense() + "\n\n" + output);
+      write(new File(dirGenerated, fileName), generateTSLicense() + "\n\n" + output);
     }
 
     String prepend = "/** @noResolution @noSelfInFile */\n";
