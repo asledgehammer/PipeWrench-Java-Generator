@@ -351,6 +351,10 @@ new String[] {"MIT License",
       builderMethods.append(s);
     }
 
+    // Add these two methods to the API. This helps arbitrate EventListener handling for custom solutions / APIs.
+    builderMethods.append("export function addEventListener(id: string, listener: any): void;\n");
+    builderMethods.append("export function removeEventListener(id: string, listener: any): void;\n");
+
     File fileZomboid = new File(dirGenerated, FILE_NAME_PREFIX + "_API.d.ts");
     String content = prepend + builderClasses + '\n' + builderTypes + '\n' + builderMethods + "}\n";
     System.out.println("Writing file: " + FILE_NAME_PREFIX + "_API.d.ts..");
