@@ -472,7 +472,8 @@ new String[] {"MIT License",
 
     builder.append("return Exports\n");
 
-    File fileZomboidLua = new File(dirGenerated, FILE_NAME_PREFIX + "_API.lua");
+    // Here we have to name the Lua file exactly the same as the module so require statements work.
+    File fileZomboidLua = new File(dirGenerated, MODULE_NAME + ".lua");
     write(fileZomboidLua, generateLuaLicense() + "\n" + builder);
   }
 
