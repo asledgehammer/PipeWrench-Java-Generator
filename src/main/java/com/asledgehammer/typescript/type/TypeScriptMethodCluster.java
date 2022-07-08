@@ -387,6 +387,7 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
   }
 
   public String compileTypeScriptFunction(String prefix) {
+    TypeScriptSettings settings = element.getNamespace().getGraph().getCompiler().getSettings();
     StringBuilder builder = new StringBuilder();
     builder.append(walkDocs(prefix)).append('\n');
     builder.append(prefix).append("export function ").append(methodName);
@@ -447,7 +448,7 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
           break;
         }
       }
-      if (!isPrimitive) s.append(" | null");
+      if (settings.useNull && !isPrimitive) s.append(" | null");
 
       s.append(", ");
     }
@@ -462,9 +463,8 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
       returned.append(returnType);
     }
 
-    if (returnTypeContainsNonPrimitive) {
-      if (returned.length() > 0) returned.append(" | ");
-      returned.append("null");
+    if (settings.useNull && returnTypeContainsNonPrimitive && returned.length() > 0) {
+      returned.append(" | null");
     }
 
     builder.append(returned).append(';');
