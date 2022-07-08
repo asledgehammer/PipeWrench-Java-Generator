@@ -1,6 +1,7 @@
 package com.asledgehammer.typescript.type;
 
 import com.asledgehammer.typescript.TypeScriptGraph;
+import com.asledgehammer.typescript.settings.TypeScriptSettings;
 import com.asledgehammer.typescript.util.ClazzUtils;
 import com.asledgehammer.typescript.util.DocBuilder;
 
@@ -150,6 +151,8 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
     Class<?> clazz = element.clazz;
     if (clazz == null || !exists) return "";
 
+    TypeScriptSettings settings = element.getNamespace().getGraph().getCompiler().getSettings();
+
     StringBuilder builder = new StringBuilder();
     builder.append(walkDocs(prefix)).append('\n');
     builder.append(prefix);
@@ -182,7 +185,7 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
           break;
         }
       }
-      if (!isPrimitive) s.append(" | null");
+      if (settings.useNull && !isPrimitive) s.append(" | null");
       s.append(", ");
     }
 
