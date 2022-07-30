@@ -128,7 +128,6 @@ import zombie.vehicles.*;
 import zombie.world.moddata.ModData;
 
 import java.io.*;
-import java.lang.reflect.TypeVariable;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -160,22 +159,25 @@ new String[] {"MIT License",
 "SOFTWARE."
 };
 
-  private static final DateFormat dateFormat = new SimpleDateFormat("EEEEE MMMMM yyyy HH:mm:ss.SSSZ");
+  private static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
   private static final List<Class<?>> classes = new ArrayList<>();
   private final TypeScriptCompiler tsCompiler;
   private final File dirGenerated;
+  private final File dirJava;
+  private final File dirPartials;
 
-  public static String PZ_VERSION = "41.71";
-  public static String MODULE_NAME = "Zomboid";
-  public static String FILE_NAME_PREFIX = MODULE_NAME + "_" + PZ_VERSION;
+  public static String MODULE_NAME = "PipeWrench";
 
   public RenderZomboid() {
 
     File dirMain = new File("pipewrench");
     dirGenerated = new File(dirMain, "generated");
+    dirJava = new File(dirGenerated, "java");
+    dirPartials = new File(dirGenerated, "partials");
     if (!dirMain.exists()) dirMain.mkdirs();
     if (!dirGenerated.exists()) dirGenerated.mkdirs();
-
+    if (!dirJava.exists()) dirJava.mkdirs();
+    if (!dirPartials.exists()) dirPartials.mkdirs();
     GLInitializer.init();
 
     TypeScriptSettings tsSettings = new TypeScriptSettings();
@@ -228,10 +230,10 @@ new String[] {"MIT License",
 
     // Write all references to a file to refer to for all files.
     List<String> references = new ArrayList<>();
-    references.add("/// <reference path=\"" + FILE_NAME_PREFIX + "_API.d.ts\" />\n");
+    references.add("/// <reference path=\"../" + MODULE_NAME + ".d.ts\" />\n");
     for(TypeScriptNamespace namespace : compiledNamespaces.keySet()) {
-      String fileName = FILE_NAME_PREFIX + "__" + namespace.getFullPath().replaceAll("\\.", "_") + ".d.ts";
-      references.add("/// <reference path=\"" + fileName + "\" />\n");
+      String fileName = namespace.getFullPath().replaceAll("\\.", "_") + ".d.ts";
+      references.add("/// <reference path=\"java/" + fileName + "\" />\n");
     }
 
     references.sort(Comparator.naturalOrder());
@@ -241,12 +243,15 @@ new String[] {"MIT License",
       referenceBuilder.append(s);
     }
 
-    String output = generateTSLicense() + "\n\n" + referenceBuilder;
-    write(new File(dirGenerated, FILE_NAME_PREFIX + "_References.d.ts"), output);
+    String output = generateTSLicense() + "\n\n";
+    output += "// [PARTIAL:START]\n";
+    output += referenceBuilder;
+    output += "// [PARTIAL:STOP]\n";
+    write(new File(dirPartials, "Java.reference.partial.d.ts"), output);
 
     for(TypeScriptNamespace namespace : compiledNamespaces.keySet()) {
       output = "/** @noResolution @noSelfInFile */\n";
-      output += "/// <reference path=\"" + FILE_NAME_PREFIX + "_References.d.ts\" />\n";
+      output += "/// <reference path=\"../reference.d.ts\" />\n";
       output += "declare module '" + MODULE_NAME + "' {\n";
       output += compiledNamespaces.get(namespace) + "\n";
 
@@ -271,14 +276,15 @@ new String[] {"MIT License",
 
       output += "}\n";
 
-      String fileName = FILE_NAME_PREFIX + "__" + namespace.getFullPath().replaceAll("\\.", "_") + ".d.ts";
+      String fileName = namespace.getFullPath().replaceAll("\\.", "_") + ".d.ts";
       System.out.println("Writing file: " + fileName + "..");
-      write(new File(dirGenerated, fileName), generateTSLicense() + "\n\n" + output);
+      write(new File(dirJava, fileName), generateTSLicense() + "\n\n" + output);
     }
 
     String prepend = "/** @noResolution @noSelfInFile */\n";
-    prepend += "/// <reference path=\"" + FILE_NAME_PREFIX + "_References.d.ts\" />\n";
+    prepend += "/// <reference path=\"reference.d.ts\" />\n";
     prepend += "declare module '" + MODULE_NAME + "' {\n";
+    prepend += "// [PARTIAL:START]\n";
     TypeScriptClass globalObject =
             (TypeScriptClass) tsCompiler.resolve(LuaManager.GlobalObject.class);
 
@@ -352,93 +358,14 @@ new String[] {"MIT License",
     }
 
     // Add these two methods to the API. This helps arbitrate EventListener handling for custom solutions / APIs.
-    builderMethods.append("export function addEventListener(id: string, listener: any): void;\n");
-    builderMethods.append("export function removeEventListener(id: string, listener: any): void;\n");
+    builderMethods.append("  export function addEventListener(id: string, listener: any): void;\n");
+    builderMethods.append("  export function removeEventListener(id: string, listener: any): void;\n");
 
-    File fileZomboid = new File(dirGenerated, FILE_NAME_PREFIX + "_API.d.ts");
-    String content = prepend + builderClasses + '\n' + builderTypes + '\n' + builderMethods + "}\n";
-    System.out.println("Writing file: " + FILE_NAME_PREFIX + "_API.d.ts..");
-    write(fileZomboid, generateTSLicense() + "\n\n" + content);
-  }
-
-  private void renderZomboidAsOneFile() {
-    String prepend = "/** @noResolution @noSelfInFile */\n";
-    prepend += "declare module '" + MODULE_NAME + "' {";
-    String output = tsCompiler.compile("  ");
-    TypeScriptClass globalObject =
-            (TypeScriptClass) tsCompiler.resolve(LuaManager.GlobalObject.class);
-
-    List<TypeScriptElement> elements = tsCompiler.getAllGeneratedElements();
-    List<String> knownNames = new ArrayList<>();
-    List<TypeScriptElement> prunedElements = new ArrayList<>();
-
-    for (int index = elements.size() - 1; index >= 0; index--) {
-      TypeScriptElement element = elements.get(index);
-      Class<?> clazz = element.getClazz();
-      if (clazz == null) continue;
-      String name = clazz.getSimpleName();
-      if (name.contains("$")) {
-        String[] split = name.split("\\$");
-        name = split[split.length - 1];
-      }
-      if (!knownNames.contains(name)) {
-        prunedElements.add(element);
-        knownNames.add(name);
-      }
-    }
-
-    prunedElements.sort(nameSorter);
-
-    StringBuilder builderTypes = new StringBuilder();
-    StringBuilder builderClasses = new StringBuilder();
-    StringBuilder builderMethods = new StringBuilder();
-    for (TypeScriptElement element : prunedElements) {
-
-      String name = element.getClazz().getSimpleName();
-      if (name.contains("$")) {
-        String[] split = name.split("\\$");
-        name = split[split.length - 1];
-      }
-
-      int genParams = element.getClazz().getTypeParameters().length;
-      StringBuilder params = new StringBuilder();
-      if(genParams != 0) {
-        params.append("<");
-        for(int x = 0; x < genParams; x++) {
-          if(x == 0) {
-            params.append("any");
-          } else {
-            params.append(", any");
-          }
-        }
-        params.append(">");
-      }
-
-      String s;
-      if(element instanceof TypeScriptType) {
-        String fullPath = element.getClazz().getName();
-        fullPath = fullPath.replaceAll(".function.", "._function_.");
-        s = "  export type " + name + " = " + fullPath + params + '\n';
-        builderTypes.append(s);
-      } else {
-        s = "  /** @customConstructor " + name + ".new */\n";
-        s += "  export class " + name + " extends " + element.getClazz().getName() + params + " {}\n";
-        builderClasses.append(s);
-      }
-    }
-
-    Map<String, TypeScriptMethodCluster> methods = globalObject.getStaticMethods();
-    List<String> methodNames = new ArrayList<>(methods.keySet());
-    methodNames.sort(Comparator.naturalOrder());
-
-    for (String methodName : methodNames) {
-      TypeScriptMethodCluster method = methods.get(methodName);
-      String s = method.compileTypeScriptFunction("  ") + '\n';
-      builderMethods.append(s);
-    }
-
-    File fileZomboid = new File(dirGenerated, FILE_NAME_PREFIX + "_API.d.ts");
-    String content = prepend + '\n' + output + '\n' + builderClasses + '\n' + builderTypes + '\n' + builderMethods + "\n}";
+    File fileZomboid = new File(dirPartials, "Java.api.partial.d.ts");
+    String content = prepend + builderClasses + '\n' + builderTypes + '\n' + builderMethods;
+    content += "// [PARTIAL:STOP]\n";
+    content += "}\n";
+    System.out.println("Writing file: Java.api.partial.d.ts..");
     write(fileZomboid, generateTSLicense() + "\n\n" + content);
   }
 
@@ -450,6 +377,7 @@ new String[] {"MIT License",
     String s =
             """
             local Exports = {}
+            -- [PARTIAL:START]
             function Exports.tonumber(arg) return tonumber(arg) end
             function Exports.tostring(arg) return tostring(arg) end
             function Exports.global(id) return _G[id] end
@@ -473,11 +401,11 @@ new String[] {"MIT License",
         builder.append(line);
       }
     }
-
+    builder.append("-- [PARTIAL:STOP]\n");
     builder.append("return Exports\n");
 
     // Here we have to name the Lua file exactly the same as the module so require statements work.
-    File fileZomboidLua = new File(dirGenerated, MODULE_NAME + ".lua");
+    File fileZomboidLua = new File(dirPartials, "Java.interface.partial.lua");
     write(fileZomboidLua, generateLuaLicense() + "\n" + builder);
   }
 
