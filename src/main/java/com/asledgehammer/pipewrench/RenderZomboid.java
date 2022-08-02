@@ -223,7 +223,7 @@ new String[] {"MIT License",
 
     // Write all references to a file to refer to for all files.
     List<String> references = new ArrayList<>();
-    references.add("/// <reference path=\"../" + MODULE_NAME + ".d.ts\" />\n");
+    references.add("/// <reference path=\"" + MODULE_NAME + ".d.ts\" />\n");
     for(TypeScriptNamespace namespace : compiledNamespaces.keySet()) {
       String fileName = namespace.getFullPath().replaceAll("\\.", "_") + ".d.ts";
       references.add("/// <reference path=\"java/" + fileName + "\" />\n");
@@ -335,7 +335,7 @@ new String[] {"MIT License",
         builderTypes.append(s);
       } else {
         s = "  /** @customConstructor " + name + ".new */\n";
-        s += "  export class " + name + params + " extends " + element.getClazz().getName() + params + " {}\n";
+        s += "  export class " + name + " extends " + element.getClazz().getName() + params + " {}\n";
         builderClasses.append(s);
       }
     }
