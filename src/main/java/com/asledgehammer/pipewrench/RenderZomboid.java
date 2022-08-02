@@ -1,4 +1,7 @@
-package test;
+package com.asledgehammer.pipewrench;
+
+import static com.asledgehammer.pipewrench.FileSystem.dirJava;
+import static com.asledgehammer.pipewrench.FileSystem.dirPartials;
 
 import com.asledgehammer.typescript.TypeScriptCompiler;
 import com.asledgehammer.typescript.settings.Recursion;
@@ -161,23 +164,12 @@ new String[] {"MIT License",
 
   private static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
   private static final List<Class<?>> classes = new ArrayList<>();
-  private final TypeScriptCompiler tsCompiler;
-  private final File dirGenerated;
-  private final File dirJava;
-  private final File dirPartials;
+  private static final TypeScriptCompiler tsCompiler;
 
-  public static String MODULE_NAME = "PipeWrench";
+  static {
 
-  public RenderZomboid() {
+    addClassesToRender();
 
-    File dirMain = new File("pipewrench");
-    dirGenerated = new File(dirMain, "generated");
-    dirJava = new File(dirGenerated, "java");
-    dirPartials = new File(dirGenerated, "partials");
-    if (!dirMain.exists()) dirMain.mkdirs();
-    if (!dirGenerated.exists()) dirGenerated.mkdirs();
-    if (!dirJava.exists()) dirJava.mkdirs();
-    if (!dirPartials.exists()) dirPartials.mkdirs();
     GLInitializer.init();
 
     TypeScriptSettings tsSettings = new TypeScriptSettings();
@@ -193,16 +185,17 @@ new String[] {"MIT License",
 
     tsCompiler = new TypeScriptCompiler(tsSettings);
     for (Class<?> clazz : classes) tsCompiler.add(clazz);
-
-    tsCompiler.walk();
   }
 
-  public void render() {
+  public static String MODULE_NAME = "PipeWrench";
+
+  public static void render() {
+    tsCompiler.walk();
     renderZomboidAsMultiFile();
     renderLuaZomboid();
   }
 
-  private String generateTSLicense() {
+  private static String generateTSLicense() {
     Calendar calendar = Calendar.getInstance();
     DocBuilder docBuilder = new DocBuilder();
     for(String line : LICENSE) {
@@ -213,7 +206,7 @@ new String[] {"MIT License",
     return docBuilder.build("");
   }
 
-  private String generateLuaLicense() {
+  private static String generateLuaLicense() {
     Calendar calendar = Calendar.getInstance();
     StringBuilder built = new StringBuilder();
     for(String line : LICENSE) {
@@ -224,7 +217,7 @@ new String[] {"MIT License",
     return built.toString();
   }
 
-  private void renderZomboidAsMultiFile() {
+  private static void renderZomboidAsMultiFile() {
 
     Map<TypeScriptNamespace, String> compiledNamespaces = tsCompiler.compileNamespacesSeparately("  ");
 
@@ -369,7 +362,7 @@ new String[] {"MIT License",
     write(fileZomboid, generateTSLicense() + "\n\n" + content);
   }
 
-  private void renderLuaZomboid() {
+  private static void renderLuaZomboid() {
 
     List<TypeScriptElement> elements = tsCompiler.getAllGeneratedElements();
     elements.sort(nameSorter);
@@ -409,7 +402,7 @@ new String[] {"MIT License",
     write(fileZomboidLua, generateLuaLicense() + "\n" + builder);
   }
 
-  static {
+  static void addClassesToRender() {
     addClass(IsoPlayer.class);
     addClass(Vehicle.class);
     addClass(BaseVehicle.class);

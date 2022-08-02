@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import se.krka.kahlua.integration.annotations.LuaMethod;
 
 public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCompilable {
 
@@ -21,6 +22,7 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
   private final List<List<Boolean>> isVararg = new ArrayList<>();
   private final TypeScriptElement element;
   public final boolean isStatic;
+  private final String methodNameOriginal;
   public boolean exists = false;
   private int minParamCount = Integer.MAX_VALUE;
 
@@ -32,8 +34,29 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
 
   public TypeScriptMethodCluster(TypeScriptElement element, Method method) {
     this.element = element;
-    this.methodName = method.getName();
     this.isStatic = Modifier.isStatic(method.getModifiers());
+    this.methodNameOriginal = method.getName();
+    // Some methods in zombie.Lua.LuaManager$GlobalObject are resolved using annotation names that
+    // are different from the method's name.
+    if(method.isAnnotationPresent(LuaMethod.class)) {
+      LuaMethod annotation = method.getAnnotationsByType(LuaMethod.class)[0];
+      this.methodName = annotation.name();
+      System.out.println("##### LUAMETHOD: " + this.methodName + " #####");
+    } else {
+      this.methodName = method.getName();
+    }
+  }
+
+  private String sanatizeName(String name) {
+    if(name.equals("instanceof")) return '_' + name + "_";
+    return name;
+  }
+
+  private String unsanitizeName(String name) {
+    if(name.startsWith("_") && name.endsWith("_")) {
+      return name.substring(1, name.length() - 1);
+    }
+    return name;
   }
 
   @Override
@@ -53,7 +76,7 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
 
     for (Method method : sortedMethods) {
 
-      if (!methodName.equals(method.getName())) continue;
+      if (!method.getName().equals(this.methodNameOriginal)) continue;
       if (Modifier.isStatic(method.getModifiers()) != isStatic) continue;
 
       Parameter[] parameters = method.getParameters();
@@ -202,7 +225,7 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     docBuilder.appendLine("Method Parameters: ");
 
     for (Method method : sortedMethods) {
-      if (!methodName.equals(method.getName())) continue;
+      if (!methodNameOriginal.equals(method.getName())) continue;
       if (Modifier.isStatic(method.getModifiers()) != isStatic) continue;
 
       Parameter[] parameters = method.getParameters();
@@ -252,7 +275,7 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     builder.append(prefix);
 
     if (isStatic) builder.append("static ");
-    builder.append(methodName);
+    builder.append(sanatizeName(methodName));
 
     StringBuilder genericParamsBody;
     List<String> genericTypeNames = new ArrayList<>();
@@ -372,17 +395,17 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
   }
 
   public String compileLua(String table) {
-    String compiled = "function " + table + '.';
-    StringBuilder methodBody = new StringBuilder(methodName + "(");
+    StringBuilder params = new StringBuilder();
     if (!allParameters.isEmpty()) {
       for (int i = 0; i < this.allParameters.size(); i++) {
-        methodBody.append("arg").append(i + 1).append(", ");
+        params.append("arg").append(i + 1).append(",");
       }
-      methodBody = new StringBuilder(methodBody.substring(0, methodBody.length() - 2));
+      params = new StringBuilder(params.substring(0, params.length() - 1));
     }
-    methodBody.append(")");
-    compiled += methodBody;
-    compiled += " return " + methodBody + " end";
+
+    String p = '(' + params.toString() + ')';
+    String compiled = "function " + table + '.' + sanatizeName(methodName) + p;
+    compiled += " return " + this.methodName + p + " end";
     return compiled;
   }
 
@@ -390,7 +413,7 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     TypeScriptSettings settings = element.getNamespace().getGraph().getCompiler().getSettings();
     StringBuilder builder = new StringBuilder();
     builder.append(walkDocs(prefix)).append('\n');
-    builder.append(prefix).append("export function ").append(methodName);
+    builder.append(prefix).append("export function ").append(sanatizeName(methodName));
 
     StringBuilder genericParamsBody;
     List<String> genericTypeNames = new ArrayList<>();

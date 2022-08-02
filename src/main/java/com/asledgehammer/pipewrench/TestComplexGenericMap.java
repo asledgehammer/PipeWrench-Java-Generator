@@ -1,4 +1,4 @@
-package test;
+package com.asledgehammer.pipewrench;
 
 import com.asledgehammer.typescript.util.ClazzUtils;
 

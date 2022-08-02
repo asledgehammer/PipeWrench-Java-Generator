@@ -8,3 +8,4 @@ lib/
 gradle/
 *.ts
 src/main/resources/stitched/
+PipeWrench_Java_Typings.jar

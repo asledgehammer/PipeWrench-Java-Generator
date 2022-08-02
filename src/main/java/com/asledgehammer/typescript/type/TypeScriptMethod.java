@@ -8,6 +8,7 @@ import com.asledgehammer.typescript.util.DocBuilder;
 import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
+import se.krka.kahlua.integration.annotations.LuaMethod;
 
 @SuppressWarnings("unused")
 public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkable {
@@ -18,6 +19,7 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
   private final boolean bStatic;
   private boolean walked = false;
   private String returnType;
+  private final String name;
 
   public boolean isStatic() {
     return bStatic;
@@ -27,6 +29,16 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
     this.container = container;
     this.method = method;
     this.bStatic = Modifier.isStatic(this.method.getModifiers());
+
+    // Some methods in zombie.Lua.LuaManager$GlobalObject are resolved using annotation names that
+    // are different from the method's name.
+    if(method.isAnnotationPresent(LuaMethod.class)) {
+      LuaMethod annotation = method.getAnnotationsByType(LuaMethod.class)[0];
+      this.name = annotation.name();
+      System.out.println("##### LUAMETHOD: " + this.name + " #####");
+    } else {
+      this.name = method.getName();
+    }
   }
 
   public static List<String> extractGenericDefinitions(String raw) {
@@ -138,7 +150,7 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
     }
 
     StringBuilder compiled =
-        new StringBuilder(prefix + (bStatic ? "static " : "") + method.getName());
+        new StringBuilder(prefix + (bStatic ? "static " : "") + this.name);
 
     if (genericTypes.length != 0) {
       compiled.append("<");
@@ -200,7 +212,7 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
     if (!doc.isEmpty()) {
       builder.append(doc.build(prefix)).append('\n');
     }
-    StringBuilder compiled = new StringBuilder("export function " + method.getName() + "(");
+    StringBuilder compiled = new StringBuilder("export function " + this.name + "(");
 
     if (!parameters.isEmpty()) {
       compiled.append("this: void, ");
@@ -215,7 +227,7 @@ public class TypeScriptMethod implements TypeScriptCompilable, TypeScriptWalkabl
 
   public String compileLua(String table) {
     String compiled = "function " + table + '.';
-    StringBuilder methodBody = new StringBuilder(method.getName() + "(");
+    StringBuilder methodBody = new StringBuilder(this.name + "(");
     if (!parameters.isEmpty()) {
       for (TypeScriptMethodParameter parameter : parameters) {
         methodBody.append(parameter.name).append(", ");

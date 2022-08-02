@@ -1,14 +1,10 @@
-package test;
+package com.asledgehammer.pipewrench;
 
 import com.asledgehammer.typescript.TypeScriptCompiler;
 import com.asledgehammer.typescript.settings.TypeScriptSettings;
-import com.asledgehammer.typescript.type.TypeScriptClass;
-import com.asledgehammer.typescript.type.TypeScriptElement;
-import com.asledgehammer.typescript.type.TypeScriptEnum;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 public class TestClass {

@@ -1,4 +1,4 @@
-package test;
+package com.asledgehammer.pipewrench;
 
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;

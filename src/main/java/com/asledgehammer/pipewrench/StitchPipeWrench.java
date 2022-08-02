@@ -1,4 +1,7 @@
-package test;
+package com.asledgehammer.pipewrench;
+
+import static com.asledgehammer.pipewrench.FileSystem.dirOutput;
+import static com.asledgehammer.pipewrench.FileSystem.dirPartials;
 
 import com.asledgehammer.typescript.util.DocBuilder;
 import java.io.File;
@@ -18,15 +21,12 @@ public class StitchPipeWrench {
   private static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
 
   private final String moduleName;
-  private final File dirPartials = new File("partials/");
-  private final File dirOutput = new File("output/");
 
   public StitchPipeWrench(String moduleName) {
     this.moduleName = moduleName;
+  }
 
-    // Initialize directories.
-    if (!dirPartials.exists()) dirPartials.mkdirs();
-    if (!dirOutput.exists()) dirOutput.mkdirs();
+  public void stitch() {
 
     File[] files = dirPartials.listFiles();
     if (files == null || files.length == 0) {
@@ -204,7 +204,7 @@ public class StitchPipeWrench {
   }
 
   public static void main(String[] args) {
-    new StitchPipeWrench("PipeWrench");
+    new StitchPipeWrench("PipeWrench").stitch();
   }
 
   private static final String[] LICENSE =
