@@ -6,6 +6,7 @@ build.gradle
 build/
 lib/
 gradle/
+out/
 *.ts
 src/main/resources/stitched/
 PipeWrench_Java_Typings.jar
