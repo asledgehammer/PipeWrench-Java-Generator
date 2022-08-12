@@ -202,7 +202,7 @@ new String[] {"MIT License",
       docBuilder.appendLine(line.replaceAll("\\$YEAR\\$", "" + calendar.get(Calendar.YEAR)));
     }
     docBuilder.appendLine();
-    docBuilder.appendLine("File generated at " + dateFormat.format(new Date()));
+//    docBuilder.appendLine("File generated at " + dateFormat.format(new Date()));
     return docBuilder.build("");
   }
 
