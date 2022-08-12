@@ -332,11 +332,15 @@ new String[] {"MIT License",
         String fullPath = element.getClazz().getName();
         fullPath = fullPath.replaceAll(".function.", "._function_.");
         s = "  export type " + name + " = " + fullPath + params + '\n';
-        builderTypes.append(s);
+        if (builderTypes.indexOf(s) >= 0) {
+          builderTypes.append(s);
+        }
       } else {
         s = "  /** @customConstructor " + name + ".new */\n";
         s += "  export class " + name + " extends " + element.getClazz().getName() + params + " {}\n";
-        builderClasses.append(s);
+        if (builderTypes.indexOf(s) >= 0) {
+          builderClasses.append(s);
+        }
       }
     }
 
