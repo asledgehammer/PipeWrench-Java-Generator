@@ -213,7 +213,7 @@ new String[] {"MIT License",
       built.append("--- ").append(line.replaceAll("\\$YEAR\\$", "" + calendar.get(Calendar.YEAR))).append('\n');
     }
     built.append("---\n");
-    built.append("--- File generated at ").append(dateFormat.format(new Date())).append('\n');
+//    built.append("--- File generated at ").append(dateFormat.format(new Date())).append('\n');
     return built.toString();
   }
 
