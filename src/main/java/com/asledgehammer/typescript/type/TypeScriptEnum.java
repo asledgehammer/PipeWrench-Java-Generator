@@ -108,25 +108,11 @@ public class TypeScriptEnum extends TypeScriptElement implements TypeScriptCompi
     stringBuilder.append(prefix).append("name(): string;\n");
     stringBuilder.append(prefix).append("ordinal(): number;\n");
     if (!methods.isEmpty()) {
-
-      ArrayList<String> toRemove = new ArrayList<>();
-      Map<String, TypeScriptMethod> methods = new HashMap<>(this.methods);
-      for (String key : methods.keySet()) {
-        if (methods.get(key).isStatic()) toRemove.add(key);
-      }
-      if (!toRemove.isEmpty()) {
-        for (String key : toRemove) methods.remove(key);
-      }
-
-      if (!methods.isEmpty()) {
-        List<String> names = new ArrayList<>(methods.keySet());
-        names.sort(Comparator.naturalOrder());
-        for (String name : names) {
-          TypeScriptMethod method = methods.get(name);
-          if (!method.isStatic()) {
-            stringBuilder.append(method.compile(prefix)).append("\n\n");
-          }
-        }
+      List<String> names = new ArrayList<>(methods.keySet());
+      names.sort(Comparator.naturalOrder());
+      for (String name : names) {
+        TypeScriptMethod method = methods.get(name);
+        stringBuilder.append(method.compile(prefix)).append("\n\n");
       }
     }
 

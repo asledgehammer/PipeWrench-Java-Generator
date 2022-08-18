@@ -202,7 +202,7 @@ new String[] {"MIT License",
       docBuilder.appendLine(line.replaceAll("\\$YEAR\\$", "" + calendar.get(Calendar.YEAR)));
     }
     docBuilder.appendLine();
-    docBuilder.appendLine("File generated at " + dateFormat.format(new Date()));
+//    docBuilder.appendLine("File generated at " + dateFormat.format(new Date()));
     return docBuilder.build("");
   }
 
@@ -213,7 +213,7 @@ new String[] {"MIT License",
       built.append("--- ").append(line.replaceAll("\\$YEAR\\$", "" + calendar.get(Calendar.YEAR))).append('\n');
     }
     built.append("---\n");
-    built.append("--- File generated at ").append(dateFormat.format(new Date())).append('\n');
+//    built.append("--- File generated at ").append(dateFormat.format(new Date())).append('\n');
     return built.toString();
   }
 
@@ -332,11 +332,15 @@ new String[] {"MIT License",
         String fullPath = element.getClazz().getName();
         fullPath = fullPath.replaceAll(".function.", "._function_.");
         s = "  export type " + name + " = " + fullPath + params + '\n';
-        builderTypes.append(s);
+        if (builderTypes.indexOf(s, 0) == -1) {
+          builderTypes.append(s);
+        }
       } else {
         s = "  /** @customConstructor " + name + ".new */\n";
         s += "  export class " + name + " extends " + element.getClazz().getName() + params + " {}\n";
-        builderClasses.append(s);
+        if (builderClasses.indexOf(s, 0) == -1) {
+          builderClasses.append(s);
+        }
       }
     }
 
