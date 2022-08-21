@@ -1,0 +1,66 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+application {
+    mainClassName = 'com.asledgehammer.pipewrench.PipeWrench'
+}
+
+compileJava {
+    sourceCompatibility '16'
+    targetCompatibility '16'
+}
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': application.mainClassName
+        )
+    }
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    compileOnly 'com.yworks:yguard:3.1.0'
+    // PZ Libraries
+    implementation fileTree(dir: 'compiled', include: ['*.jar'])
+    testImplementation "junit:junit:4.12"
+}
+
+task obfuscate {
+    group 'yGuard'
+    description 'Obfuscates and shrinks the java archive.'
+
+    doLast {
+        ant.taskdef(
+                name: 'yguard',
+                classname: 'com.yworks.yguard.YGuardTask',
+                classpath: sourceSets.main.compileClasspath.asPath
+        )
+
+        def archivePath = jar.archiveFile.get().asFile.path
+        println(archivePath)
+        println(archivePath.replace(".jar", "_obf.jar"))
+        ant.yguard {
+            inoutpair(in: archivePath, out: "PipeWrench_Java_Typings.jar") {
+
+            }
+            attribute(name: "Deprecated")
+            rename(mainclass: application.mainClassName, logfile: "${buildDir}/yguard.log.xml", replaceClassNameStrings: true) {
+//                keep {
+//                    'class'(classes: 'public', methods: 'public', fields: 'public')
+//                }
+            }
+        }
+    }
+}
