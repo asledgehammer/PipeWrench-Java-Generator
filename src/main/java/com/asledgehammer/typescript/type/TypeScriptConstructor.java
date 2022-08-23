@@ -40,8 +40,6 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
         sortedConstructors.add(constructor);
       }
     }
-// NOTE: This makes the implementation randomized with same parameter counts on methods.
-//    sortedConstructors.sort(Comparator.comparingInt(Constructor::getParameterCount));
 
     this.minParamCount = exists ? Integer.MAX_VALUE : 0;
 
