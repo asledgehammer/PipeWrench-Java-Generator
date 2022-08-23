@@ -6,7 +6,6 @@ import java.util.Scanner;
 public class PipeWrench implements Runnable {
 
   private Scanner scanner;
-  private RenderZomboid generator;
   private StitchPipeWrench stitcher;
 
   private volatile boolean bDone = false;
@@ -27,39 +26,52 @@ public class PipeWrench implements Runnable {
         return;
       }
       if(command.isEmpty()) {
-        try {
-          Thread.sleep(10L);
-        } catch (InterruptedException e) {
-          throw new RuntimeException(e);
-        }
+        sleep();
+        continue;
       }
       String commandLower = command.toLowerCase();
+      String[] args = commandLower.split(" ");
+      if(args.length != 2 || (!args[0].equals("pipewrench") && !args[0].equals("pw"))) {
+        sendHelp();
+        sleep();
+        continue;
+      }
       try {
-        if(commandLower.equals("pipewrench generate")) {
-          System.out.println("[PIPEWRENCH] :: Generating Typings..");
-          RenderZomboid.render();
-          System.out.println("[PIPEWRENCH] :: Done.");
-        } else if(commandLower.equals("pipewrench stitch")) {
-          System.out.println("[PIPEWRENCH] :: Stitching Typings..");
-          stitcher = new StitchPipeWrench("PipeWrench");
-          stitcher.stitch();
-          System.out.println("[PIPEWRENCH] :: Done.");
-        } else {
-          System.out.println("[PIPEWRENCH] :: Commands:\n\t- 'pipewrench generate' Generates Java TypeScript definitions, exporting them to 'Zomboid/PipeWrench/generated/.\n\t- 'pipewrench stitch' Stitches Java & Lua TypeScript Definitions, Exporting them to 'Zomboid/PipeWrench/output'.");
+        switch (args[1]) {
+          case "generate", "g" -> {
+            System.out.println("[PIPEWRENCH] :: Generating Typings..");
+            RenderZomboid.render();
+            System.out.println("[PIPEWRENCH] :: Done.");
+          }
+          case "stitch", "s" -> {
+            System.out.println("[PIPEWRENCH] :: Stitching Typings..");
+            stitcher = new StitchPipeWrench("PipeWrench");
+            stitcher.stitch();
+            System.out.println("[PIPEWRENCH] :: Done.");
+          }
+          default -> sendHelp();
         }
       } catch (Exception e) {
         System.err.println("Failed to execute PipeWrench command: " + command);
         e.printStackTrace(System.err);
       }
 
-      try {
-        Thread.sleep(10L);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
+      sleep();
     }
 
     scanner.close();
+  }
+
+  private static void sleep() {
+    try {
+      Thread.sleep(10L);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static void sendHelp() {
+    System.out.println("[PIPEWRENCH] :: Commands:\n\t- 'pipewrench generate' Generates Java TypeScript definitions, exporting them to 'Zomboid/PipeWrench/generated/.\n\t- 'pipewrench stitch' Stitches Java & Lua TypeScript Definitions, Exporting them to 'Zomboid/PipeWrench/output'.");
   }
 
   public static void main(String[] args) {
