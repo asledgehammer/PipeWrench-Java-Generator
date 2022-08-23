@@ -68,7 +68,9 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
 
     Method[] ms = clazz.getMethods();
     Collections.addAll(sortedMethods, ms);
-    sortedMethods.sort(Comparator.comparingInt(Method::getParameterCount));
+
+    // NOTE: This makes the implementation randomized with same parameter counts on methods.
+    //    sortedMethods.sort(Comparator.comparingInt(Method::getParameterCount));
 
     this.exists = sortedMethods.size() != 0;
 
@@ -223,6 +225,11 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
       docBuilder.appendLine();
     }
     docBuilder.appendLine("Method Parameters: ");
+
+
+    // Sort here so that the documentation looks nice, however the method params are consistent.
+    ArrayList<Method> sortedMethods = new ArrayList<>(this.sortedMethods);
+    sortedMethods.sort(Comparator.comparingInt(Method::getParameterCount));
 
     for (Method method : sortedMethods) {
       if (!methodNameOriginal.equals(method.getName())) continue;
