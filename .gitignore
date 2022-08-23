@@ -3,7 +3,7 @@ gradlew
 gradlew.bat
 .idea/
 build/
-lib/
+compiled/
 gradle/
 out/
 *.ts
