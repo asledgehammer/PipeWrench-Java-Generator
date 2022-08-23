@@ -31,7 +31,7 @@ public class TypeScriptCompiler {
   }
 
   public void walk() {
-    graph.walk();
+    if (!graph.isReadOnly()) graph.walk();
   }
 
   public TypeScriptSettings getSettings() {
