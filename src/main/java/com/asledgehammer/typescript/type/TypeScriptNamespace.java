@@ -4,6 +4,7 @@ import com.asledgehammer.typescript.TypeScriptGraph;
 import com.asledgehammer.typescript.settings.Recursion;
 
 import java.util.*;
+import java.lang.ClassLoader;
 
 @SuppressWarnings("unused")
 public class TypeScriptNamespace
@@ -22,12 +23,12 @@ public class TypeScriptNamespace
     String[] split = path.split("\\.");
     String name = split[split.length - 1];
 
-    if (name.equals("function")) name = '_' + name;
+    if (name.equals("function"))
+      name = '_' + name;
 
     this.name = name;
 
-    this.fullPath =
-        (parent != null ? parent.fullPath + '.' : "") + (path.contains(".") ? split[0] : path);
+    this.fullPath = (parent != null ? parent.fullPath + '.' : "") + (path.contains(".") ? split[0] : path);
   }
 
   @Override
@@ -38,7 +39,8 @@ public class TypeScriptNamespace
   @Override
   public TypeScriptElement resolve(String path) {
 
-    if (path.isEmpty()) return null;
+    if (path.isEmpty())
+      return null;
 
     if (path.contains(".")) {
       String[] info = TypeScriptNamespace.shift(path);
@@ -52,19 +54,21 @@ public class TypeScriptNamespace
       }
 
       String finalInfo = subNamespace;
-      TypeScriptNamespace namespace =
-          namespaces.computeIfAbsent(
-              subNamespace,
-              s -> new TypeScriptNamespace(graph, TypeScriptNamespace.this, finalInfo));
+      TypeScriptNamespace namespace = namespaces.computeIfAbsent(
+          subNamespace,
+          s -> new TypeScriptNamespace(graph, TypeScriptNamespace.this, finalInfo));
 
       return namespace.resolve(info[1]);
     }
 
-    if (elements.containsKey(path)) return elements.get(path);
+    if (elements.containsKey(path))
+      return elements.get(path);
 
     Class<?> clazz = null;
+    ClassLoader cls = ClassLoader.getSystemClassLoader();
+
     try {
-      clazz = Class.forName(fullPath.replace("_function_", "function") + "." + (path));
+      clazz = Class.forName(fullPath.replace("_function_", "function") + "." + (path), false, cls);
     } catch (Throwable ignored) {
     }
 
@@ -110,9 +114,10 @@ public class TypeScriptNamespace
       }
     }
 
-    if (!valid) return "";
+    if (!valid)
+      return "";
 
-    //    namespaces.remove("function");
+    // namespaces.remove("function");
 
     StringBuilder builder = new StringBuilder(prefixOriginal);
 
@@ -170,16 +175,17 @@ public class TypeScriptNamespace
   }
 
   public static String[] shift(String path) {
-    if (!path.contains(".")) return new String[] {path};
+    if (!path.contains("."))
+      return new String[] { path };
     String[] split = path.split("\\.");
     if (split.length == 2) {
-      return new String[] {split[0], split[1]};
+      return new String[] { split[0], split[1] };
     } else {
       StringBuilder builder = new StringBuilder(split[1]);
       for (int index = 2; index < split.length; index++) {
         builder.append('.').append(split[index]);
       }
-      return new String[] {split[0], builder.toString()};
+      return new String[] { split[0], builder.toString() };
     }
   }
 

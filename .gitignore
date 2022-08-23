@@ -3,10 +3,14 @@ gradlew
 gradlew.bat
 .idea/
 build/
-compiled/
+lib/
 gradle/
 out/
 *.ts
 src/main/resources/stitched/
 PipeWrench_Java_Typings.jar
 PipeWrench_Java_Typings/
+pzserver
+dist
+bin
+**/.DS_Store
