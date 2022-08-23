@@ -40,8 +40,8 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
         sortedConstructors.add(constructor);
       }
     }
-
-    sortedConstructors.sort(Comparator.comparingInt(Constructor::getParameterCount));
+// NOTE: This makes the implementation randomized with same parameter counts on methods.
+//    sortedConstructors.sort(Comparator.comparingInt(Constructor::getParameterCount));
 
     this.minParamCount = exists ? Integer.MAX_VALUE : 0;
 
@@ -120,6 +120,11 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
     if (clazz == null || !exists) return "";
     DocBuilder docBuilder = new DocBuilder();
     docBuilder.appendLine("Constructors: ");
+
+    // Sort here so that the documentation looks nice, however the method params are consistent.
+    ArrayList<Constructor<?>> sortedConstructors = new ArrayList<>(this.sortedConstructors);
+    sortedConstructors.sort(Comparator.comparingInt(Constructor::getParameterCount));
+
     for (Constructor<?> constructor : sortedConstructors) {
       Parameter[] parameters = constructor.getParameters();
       if (parameters.length != 0) {
