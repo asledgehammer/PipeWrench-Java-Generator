@@ -29,7 +29,9 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
   @Override
   public void walk(TypeScriptGraph graph) {
     Class<?> clazz = element.clazz;
-    if (clazz == null) return;
+    if (clazz == null) {
+      return;
+    }
 
     Constructor<?>[] constructors = clazz.getConstructors();
     this.exists = constructors.length != 0;
@@ -43,25 +45,29 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
 
     this.minParamCount = exists ? Integer.MAX_VALUE : 0;
 
-    if(!sortedConstructors.isEmpty()) {
+    if (!sortedConstructors.isEmpty()) {
       sortedConstructors.sort((o1, o2) -> {
 
         // Try the original method first. If this is different, then we use this order.
-        if(o1.getParameterCount() != o2.getParameterCount()) {
+        if (o1.getParameterCount() != o2.getParameterCount()) {
           return o1.getParameterCount() - o2.getParameterCount();
         }
 
         // Empty method params.
-        if(o1.getParameterCount() == 0) return 0;
+        if (o1.getParameterCount() == 0) {
+          return 0;
+        }
 
         // If otherwise, we go until the string comparison of type names is not zero.
         Type[] o1Types = o1.getGenericParameterTypes();
         Type[] o2Types = o2.getGenericParameterTypes();
-        for(int index = 0; index < o1Types.length; index++) {
+        for (int index = 0; index < o1Types.length; index++) {
           Type o1Type = o1Types[index];
           Type o2Type = o2Types[index];
           int compare = o1Type.getTypeName().compareTo(o2Type.getTypeName());
-          if(compare != 0) return compare;
+          if (compare != 0) {
+            return compare;
+          }
         }
 
         return 0;
@@ -140,7 +146,9 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
 
   private String walkDocs(String prefix) {
     Class<?> clazz = element.clazz;
-    if (clazz == null || !exists) return "";
+    if (clazz == null || !exists) {
+      return "";
+    }
     DocBuilder docBuilder = new DocBuilder();
     docBuilder.appendLine("Constructors: ");
 
@@ -155,8 +163,8 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
         for (Parameter parameter : constructor.getParameters()) {
           String tName =
               (parameter.isVarArgs()
-                      ? parameter.getType().getComponentType().getSimpleName() + "..."
-                      : parameter.getType().getSimpleName())
+                  ? parameter.getType().getComponentType().getSimpleName() + "..."
+                  : parameter.getType().getSimpleName())
                   + " "
                   + parameter.getName();
           if (element.genericMap != null) {
@@ -177,7 +185,9 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
 
   public String compileCustomConstructor(String prefix) {
     Class<?> clazz = element.clazz;
-    if (clazz == null || !exists) return "";
+    if (clazz == null || !exists) {
+      return "";
+    }
 
     TypeScriptSettings settings = element.getNamespace().getGraph().getCompiler().getSettings();
 
@@ -194,7 +204,9 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
     for (int i = 0; i < allParameterTypes.size(); i++) {
 
       String sEntry = "arg" + i;
-      if (i > minParamCount - 1) sEntry += '?';
+      if (i > minParamCount - 1) {
+        sEntry += '?';
+      }
       sEntry += ": ";
 
       StringBuilder sParams = new StringBuilder();
@@ -213,11 +225,15 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
           break;
         }
       }
-      if (settings.useNull && !isPrimitive) s.append(" | null");
+      if (settings.useNull && !isPrimitive) {
+        s.append(" | null");
+      }
       s.append(", ");
     }
 
-    if (s.length() != 0) s = new StringBuilder(s.substring(0, s.length() - 2));
+    if (s.length() != 0) {
+      s = new StringBuilder(s.substring(0, s.length() - 2));
+    }
 
     builder.append(s).append(");");
     return builder.toString();

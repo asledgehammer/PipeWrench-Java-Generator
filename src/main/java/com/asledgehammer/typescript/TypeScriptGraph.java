@@ -6,6 +6,7 @@ import com.asledgehammer.typescript.type.TypeScriptNamespace;
 import java.util.*;
 
 public class TypeScriptGraph {
+
   final Map<String, TypeScriptNamespace> namespaces = new HashMap<>();
   final List<Class<?>> knownClasses = new ArrayList<>();
   private final TypeScriptCompiler compiler;
@@ -47,11 +48,17 @@ public class TypeScriptGraph {
     names.sort(Comparator.naturalOrder());
 
     for (String key : names) {
-      if (isIllegalName(key)) continue;
+      if (isIllegalName(key)) {
+        continue;
+      }
       TypeScriptNamespace namespace = namespaces.get(key);
-      if (namespace.getName().isEmpty()) continue;
+      if (namespace.getName().isEmpty()) {
+        continue;
+      }
       String compiled = namespace.compile(prefix);
-      if (compiled.isEmpty()) continue;
+      if (compiled.isEmpty()) {
+        continue;
+      }
       builder.append(compiled).append('\n');
     }
 
@@ -64,9 +71,13 @@ public class TypeScriptGraph {
     List<String> names = new ArrayList<>(namespaces.keySet());
     names.sort(Comparator.naturalOrder());
     for (String key : names) {
-      if (isIllegalName(key)) continue;
+      if (isIllegalName(key)) {
+        continue;
+      }
       TypeScriptNamespace namespace = namespaces.get(key);
-      if (namespace.getName().isEmpty()) continue;
+      if (namespace.getName().isEmpty()) {
+        continue;
+      }
       String compiled = namespace.compile(prefix);
       compiledMap.put(namespace, compiled);
     }
@@ -74,25 +85,26 @@ public class TypeScriptGraph {
   }
 
   public void walk() {
-    if (readOnly) throw new RuntimeException("Cannot walk when in read-only mode.");
+    if (readOnly) {
+      throw new RuntimeException("Cannot walk when in read-only mode.");
+    }
 
-    int cycle = 1;
-    int maxCycles = 1000;
     walking = true;
-
     do {
       addedWhileWalking = false;
       for (TypeScriptNamespace namespace : new ArrayList<>(namespaces.values())) {
         namespace.walk(this);
       }
-    } while (addedWhileWalking && cycle < maxCycles);
+    } while (addedWhileWalking);
 
     walking = false;
     readOnly = true;
   }
 
   public void add(Class<?>... clazzes) {
-    if (readOnly) throw new RuntimeException("Cannot add classes when in read-only mode.");
+    if (readOnly) {
+      throw new RuntimeException("Cannot add classes when in read-only mode.");
+    }
     for (Class<?> clazz : clazzes) {
       if (clazz.equals(Object.class)
           || clazz.equals(Void.class)
@@ -112,7 +124,9 @@ public class TypeScriptGraph {
         addedWhileWalking = true;
       }
 
-      if (clazz.isArray()) clazz = clazz.getComponentType();
+      if (clazz.isArray()) {
+        clazz = clazz.getComponentType();
+      }
       if (clazz.equals(Void.class)
           || clazz.equals(Object.class)
           || clazz.equals(Boolean.class)
@@ -126,7 +140,9 @@ public class TypeScriptGraph {
           || clazz.equals(String.class)) {
         return;
       }
-      if (!knownClasses.contains(clazz)) knownClasses.add(clazz);
+      if (!knownClasses.contains(clazz)) {
+        knownClasses.add(clazz);
+      }
     }
   }
 

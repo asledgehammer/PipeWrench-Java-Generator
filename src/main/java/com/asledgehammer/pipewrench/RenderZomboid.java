@@ -4,7 +4,6 @@ import com.asledgehammer.typescript.TypeScriptCompiler;
 import com.asledgehammer.typescript.settings.Recursion;
 import com.asledgehammer.typescript.settings.TypeScriptSettings;
 import com.asledgehammer.typescript.type.*;
-import com.asledgehammer.typescript.util.DocBuilder;
 import fmod.fmod.EmitterType;
 import fmod.fmod.FMODAudio;
 import fmod.fmod.FMODSoundBank;
@@ -132,20 +131,19 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-@SuppressWarnings({ "ResultOfMethodCallIgnored", "SpellCheckingInspection", "unused" })
+@SuppressWarnings({"ResultOfMethodCallIgnored", "SpellCheckingInspection", "unused"})
 public class RenderZomboid {
-  private File outDir;
-  private File javaDir;
-  private File luaDir;
+
+  private final File outDir;
+  private final File javaDir;
 
   public RenderZomboid(String outDir) {
     this.outDir = new File(outDir);
     this.outDir.mkdirs();
     this.javaDir = new File(this.outDir, "java");
     this.javaDir.mkdirs();
-    this.luaDir = new File(this.outDir, "lua");
-    this.luaDir.mkdirs();
-
+    File luaDir = new File(this.outDir, "lua");
+    luaDir.mkdirs();
   }
 
   private static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
@@ -168,8 +166,9 @@ public class RenderZomboid {
     tsSettings.readOnly = true;
 
     tsCompiler = new TypeScriptCompiler(tsSettings);
-    for (Class<?> clazz : classes)
+    for (Class<?> clazz : classes) {
       tsCompiler.add(clazz);
+    }
   }
 
   public static String MODULE_NAME = "@asledgehammer/pipewrench";
@@ -182,7 +181,8 @@ public class RenderZomboid {
 
   private void renderZomboidAsMultiFile() {
 
-    Map<TypeScriptNamespace, String> compiledNamespaces = tsCompiler.compileNamespacesSeparately("  ");
+    Map<TypeScriptNamespace, String> compiledNamespaces = tsCompiler.compileNamespacesSeparately(
+        "  ");
 
     // Write all references to a file to refer to for all files.
     List<String> references = new ArrayList<>();
@@ -214,8 +214,9 @@ public class RenderZomboid {
       for (int index = elements.size() - 1; index >= 0; index--) {
         TypeScriptElement element = elements.get(index);
         Class<?> clazz = element.getClazz();
-        if (clazz == null)
+        if (clazz == null) {
           continue;
+        }
         String name = clazz.getSimpleName();
         if (name.contains("$")) {
           String[] split = name.split("\\$");
@@ -239,7 +240,8 @@ public class RenderZomboid {
     prepend += "/// <reference path=\"java.reference.partial.d.ts\" />\n";
     prepend += "declare module '" + MODULE_NAME + "' {\n";
     prepend += "  // [PARTIAL:START]\n";
-    TypeScriptClass globalObject = (TypeScriptClass) tsCompiler.resolve(LuaManager.GlobalObject.class);
+    TypeScriptClass globalObject = (TypeScriptClass) tsCompiler.resolve(
+        LuaManager.GlobalObject.class);
 
     List<TypeScriptElement> elements = tsCompiler.getAllGeneratedElements();
     List<String> knownNames = new ArrayList<>();
@@ -248,8 +250,9 @@ public class RenderZomboid {
     for (int index = elements.size() - 1; index >= 0; index--) {
       TypeScriptElement element = elements.get(index);
       Class<?> clazz = element.getClazz();
-      if (clazz == null)
+      if (clazz == null) {
         continue;
+      }
       String name = clazz.getSimpleName();
       if (name.contains("$")) {
         String[] split = name.split("\\$");
@@ -298,7 +301,8 @@ public class RenderZomboid {
         }
       } else {
         s = "  /** @customConstructor " + name + ".new */\n";
-        s += "  export class " + name + " extends " + element.getClazz().getName() + params + " {}\n";
+        s += "  export class " + name + " extends " + element.getClazz().getName() + params
+            + " {}\n";
         if (builderClasses.indexOf(s, 0) == -1) {
           builderClasses.append(s);
         }
@@ -318,7 +322,8 @@ public class RenderZomboid {
     // Add these two methods to the API. This helps arbitrate EventListener handling
     // for custom solutions / APIs.
     builderMethods.append("  export function addEventListener(id: string, listener: any): void;\n");
-    builderMethods.append("  export function removeEventListener(id: string, listener: any): void;\n");
+    builderMethods.append(
+        "  export function removeEventListener(id: string, listener: any): void;\n");
 
     File fileZomboid = new File(outDir, "java.api.partial.d.ts");
     String content = prepend + builderClasses + '\n' + builderTypes + '\n' + builderMethods;
@@ -925,8 +930,9 @@ public class RenderZomboid {
   }
 
   private static void addClass(Class<?> clazz) {
-    if (classes.contains(clazz))
+    if (classes.contains(clazz)) {
       return;
+    }
     classes.add(clazz);
   }
 

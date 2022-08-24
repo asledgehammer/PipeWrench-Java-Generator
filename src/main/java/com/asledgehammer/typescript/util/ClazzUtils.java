@@ -4,7 +4,6 @@ import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
 
-@SuppressWarnings("unused")
 public class ClazzUtils {
 
   private ClazzUtils() {
@@ -12,13 +11,17 @@ public class ClazzUtils {
   }
 
   public String removeDuplicateNamespaces(String input) {
-    if(input == null || !input.contains(".")) return input;
+    if (input == null || !input.contains(".")) {
+      return input;
+    }
     String[] split = input.split("\\.");
     StringBuilder built = new StringBuilder(split[0]);
     if (split.length != 1) {
       for (int index = 1; index < split.length; index++) {
-         if(split[index - 1].equals(split[index])) continue;
-         built.append('.').append(split[index]);
+        if (split[index - 1].equals(split[index])) {
+          continue;
+        }
+        built.append('.').append(split[index]);
       }
     }
     return built.toString();
@@ -27,14 +30,18 @@ public class ClazzUtils {
   public static List<String> extractTypeDeclarations(Class<?> clazz) {
     List<String> list = new ArrayList<>();
     Type superClazz = clazz.getGenericSuperclass();
-    if (superClazz == null) return list;
+    if (superClazz == null) {
+      return list;
+    }
     return extractNestedArgs(superClazz.getTypeName());
   }
 
   public static List<String> extractNestedArgs(String raw) {
     List<String> list = new ArrayList<>();
     int indexOf = raw.indexOf("<");
-    if (indexOf == -1) return list;
+    if (indexOf == -1) {
+      return list;
+    }
     int indexCurrent = indexOf + 1;
     int inside = 1;
     StringBuilder builder = new StringBuilder();
@@ -48,18 +55,24 @@ public class ClazzUtils {
         case '>' -> {
           inside--;
           if (inside == 0) {
-            if (builder.length() != 0) list.add(builder.toString().trim());
+            if (builder.length() != 0) {
+              list.add(builder.toString().trim());
+            }
           } else if (inside == 1) {
             builder.append('>');
             list.add(builder.toString().trim());
             builder = new StringBuilder();
-          } else builder.append(next);
+          } else {
+            builder.append(next);
+          }
         }
         case ',' -> {
           if (inside == 1) {
             list.add(builder.toString().trim());
             builder = new StringBuilder();
-          } else builder.append(next);
+          } else {
+            builder.append(next);
+          }
         }
         default -> builder.append(next);
       }
@@ -70,16 +83,24 @@ public class ClazzUtils {
   public static String print(Class<?> clazz) {
     int mods = clazz.getModifiers();
     String visibility = "";
-    if (Modifier.isPublic(mods)) visibility = "public ";
-    else if (Modifier.isProtected(mods)) visibility = "protected ";
-    else if (Modifier.isPrivate(mods)) visibility = "private ";
+    if (Modifier.isPublic(mods)) {
+      visibility = "public ";
+    } else if (Modifier.isProtected(mods)) {
+      visibility = "protected ";
+    } else if (Modifier.isPrivate(mods)) {
+      visibility = "private ";
+    }
     String isStatic = Modifier.isStatic(mods) ? "static " : "";
     String isFinal = Modifier.isFinal(mods) ? "final " : "";
     String isAbstract = Modifier.isAbstract(mods) ? "abstract " : "";
     String type;
-    if (clazz.isInterface()) type = "interface ";
-    else if (clazz.isEnum()) type = "enum ";
-    else type = "class ";
+    if (clazz.isInterface()) {
+      type = "interface ";
+    } else if (clazz.isEnum()) {
+      type = "enum ";
+    } else {
+      type = "class ";
+    }
 
     StringBuilder isParamTypes = new StringBuilder();
     TypeVariable<?>[] vars = clazz.getTypeParameters();
@@ -125,13 +146,19 @@ public class ClazzUtils {
 
   public static void evaluate(Class<?> clazz, String... includesMethods) {
     List<String> includes = new ArrayList<>();
-    for (String i : includesMethods) if (!includes.contains(i)) includes.add(i);
+    for (String i : includesMethods) {
+      if (!includes.contains(i)) {
+        includes.add(i);
+      }
+    }
 
     StringBuilder builder = new StringBuilder();
     builder.append(clazz.getName()).append(" {\n");
     ComplexGenericMap genericMap = new ComplexGenericMap(clazz);
     for (Method method : clazz.getMethods()) {
-      if (!includes.isEmpty() && !includes.contains(method.getName())) continue;
+      if (!includes.isEmpty() && !includes.contains(method.getName())) {
+        continue;
+      }
 
       int modifiers = method.getModifiers();
       if (!Modifier.isPublic(modifiers)
@@ -181,18 +208,23 @@ public class ClazzUtils {
       if (!nestedArgs.isEmpty()) {
         nestedArgsString.append("<");
         for (String inner : nestedArgs) {
-          if(inner == null || inner.isEmpty()) continue;
+          if (inner == null || inner.isEmpty()) {
+            continue;
+          }
           if (inner.indexOf('<') != -1) {
-            nestedArgsString.append(walkTypesRecursively(genericMap, declClazz, inner)).append(", ");
+            nestedArgsString.append(walkTypesRecursively(genericMap, declClazz, inner))
+                .append(", ");
           } else {
             if (genericMap != null) {
-              nestedArgsString.append(genericMap.resolveDeclaredType(declClazz, inner)).append(", ");
+              nestedArgsString.append(genericMap.resolveDeclaredType(declClazz, inner))
+                  .append(", ");
             } else {
               nestedArgsString.append(inner).append(", ");
             }
           }
         }
-        nestedArgsString = new StringBuilder(nestedArgsString.substring(0, nestedArgsString.length() - 2) + ">");
+        nestedArgsString = new StringBuilder(
+            nestedArgsString.substring(0, nestedArgsString.length() - 2) + ">");
       }
     }
 
