@@ -19,10 +19,4 @@ jobs:
         uses: gradle/gradle-build-action@v2
       - run: bash ./scripts/install_pz.sh
       - run: bash ./scripts/prep_libs.sh
-      - run: gradle run --args ./java-types
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
-        with:
-          base: ${{ matrix.version }}
-          title: ${{ matrix.version }} latest
-          branch: bot/${{ matrix.version }}
+      - run: gradle run --args "cli --out ./java-types"
