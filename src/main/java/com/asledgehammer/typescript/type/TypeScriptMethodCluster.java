@@ -117,10 +117,9 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
 
           StringBuilder tName = new StringBuilder(argType.getTypeName());
           if (genericMap != null) {
-            tName =
-                new StringBuilder(
-                    ClazzUtils.walkTypesRecursively(
-                        genericMap, method.getDeclaringClass(), tName.toString()));
+            tName = new StringBuilder(
+                ClazzUtils.walkTypesRecursively(
+                    genericMap, method.getDeclaringClass(), tName.toString()));
           }
 
           tName = new StringBuilder(TypeScriptElement.inspect(graph, tName.toString()));
@@ -186,8 +185,7 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
       if (genericMap != null) {
         Class<?> declClazz = method.getDeclaringClass();
         String before = method.getGenericReturnType().getTypeName();
-        returnType =
-            new StringBuilder(ClazzUtils.walkTypesRecursively(genericMap, declClazz, before));
+        returnType = new StringBuilder(ClazzUtils.walkTypesRecursively(genericMap, declClazz, before));
       } else {
         returnType = new StringBuilder(method.getGenericReturnType().getTypeName());
       }
@@ -201,7 +199,7 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
 
       Class<?> returnClazz = method.getReturnType();
 
-      if (!returnType.toString().contains("<")) {
+      if (!returnType.toString().equals("T") && !returnType.toString().contains("<")) {
         TypeVariable<?>[] params = returnClazz.getTypeParameters();
         if (params.length != 0) {
           returnType.append("<");
@@ -257,12 +255,11 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
       if (parameters.length != 0) {
         StringBuilder compiled = new StringBuilder("(");
         for (Parameter parameter : method.getParameters()) {
-          String tName =
-              (parameter.isVarArgs()
-                  ? parameter.getType().getComponentType().getSimpleName() + "..."
-                  : parameter.getType().getSimpleName())
-                  + " "
-                  + parameter.getName();
+          String tName = (parameter.isVarArgs()
+              ? parameter.getType().getComponentType().getSimpleName() + "..."
+              : parameter.getType().getSimpleName())
+              + " "
+              + parameter.getName();
           if (element.genericMap != null) {
             tName = ClazzUtils.walkTypesRecursively(element.genericMap, element.clazz, tName);
           }
@@ -271,17 +268,15 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
           compiled.append(tName).append(", ");
         }
         compiled = new StringBuilder(compiled.substring(0, compiled.length() - 2) + ')');
-        String returnType =
-            ClazzUtils.walkTypesRecursively(
-                element.genericMap, element.clazz, method.getGenericReturnType().getTypeName());
+        String returnType = ClazzUtils.walkTypesRecursively(
+            element.genericMap, element.clazz, method.getGenericReturnType().getTypeName());
         returnType = TypeScriptElement.adaptType(returnType);
         returnType = TypeScriptElement.inspect(element.namespace.getGraph(), returnType);
         docBuilder.appendLine(" - " + compiled + ": " + returnType);
       } else {
         String compiled = "(Empty)";
-        String returnType =
-            ClazzUtils.walkTypesRecursively(
-                element.genericMap, element.clazz, method.getGenericReturnType().getTypeName());
+        String returnType = ClazzUtils.walkTypesRecursively(
+            element.genericMap, element.clazz, method.getGenericReturnType().getTypeName());
         returnType = TypeScriptElement.adaptType(returnType);
         returnType = TypeScriptElement.inspect(element.namespace.getGraph(), returnType);
         docBuilder.appendLine(" - " + compiled + ": " + returnType);
@@ -324,8 +319,7 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
       for (TypeVariable<?> variable : genericTypes) {
         genericParamsBody.append(variable.getTypeName()).append(", ");
       }
-      genericParamsBody =
-          new StringBuilder(genericParamsBody.substring(0, genericParamsBody.length() - 2) + '>');
+      genericParamsBody = new StringBuilder(genericParamsBody.substring(0, genericParamsBody.length() - 2) + '>');
       builder.append(genericParamsBody);
     }
 
@@ -470,8 +464,7 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
       for (TypeVariable<?> variable : genericTypes) {
         genericParamsBody.append(variable.getTypeName()).append(", ");
       }
-      genericParamsBody =
-          new StringBuilder(genericParamsBody.substring(0, genericParamsBody.length() - 2) + '>');
+      genericParamsBody = new StringBuilder(genericParamsBody.substring(0, genericParamsBody.length() - 2) + '>');
       builder.append(genericParamsBody);
     }
 
