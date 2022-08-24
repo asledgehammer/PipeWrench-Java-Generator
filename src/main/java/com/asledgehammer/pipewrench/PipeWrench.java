@@ -5,6 +5,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Paths;
 import java.util.Scanner;
 
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
+import net.sourceforge.argparse4j.inf.Subparsers;
+
 public class PipeWrench implements Runnable {
 
   private Scanner scanner;
@@ -53,7 +60,7 @@ public class PipeWrench implements Runnable {
           }
           case "stitch", "s" -> {
             System.out.println("[PIPEWRENCH] :: Stitching Typings..");
-            stitcher = new StitchPipeWrench("PipeWrench",outDir);
+            stitcher = new StitchPipeWrench("PipeWrench", outDir);
             stitcher.stitch();
             System.out.println("[PIPEWRENCH] :: Done.");
           }
@@ -83,18 +90,37 @@ public class PipeWrench implements Runnable {
         "[PIPEWRENCH] :: Commands:\n\t- 'pipewrench generate' Generates Java TypeScript definitions, exporting them to 'Zomboid/PipeWrench/generated/.\n\t- 'pipewrench stitch' Stitches Java & Lua TypeScript Definitions, Exporting them to 'Zomboid/PipeWrench/output'.");
   }
 
+  public static void cli(String outDir) {
+    System.out.println("Exporting to " + outDir);
+    RenderZomboid renderer = new RenderZomboid(outDir);
+    renderer.render();
+  }
+
+  public static void live(String[] args) {
+    new Thread(new PipeWrench(), "PipeWrench-Thread").start();
+    invokeMain("zombie.gameStates.MainScreenState", args);
+  }
+
   public static void main(String[] args) {
     System.out.println("### PIPEWRENCH_JAVA_TYPES_INIT ###");
-    String outDir = "./dist";
-    // cludge trying to support CLI and usage as PZ wrapper
-    if (args.length > 2) {
-      outDir = args[0];
-      System.out.println("Exporting to " + outDir);
-      RenderZomboid renderer = new RenderZomboid(outDir);
-      renderer.render();
-    } else {
-      new Thread(new PipeWrench(), "PipeWrench-Thread").start();
-      invokeMain("zombie.gameStates.MainScreenState", args);
+
+    ArgumentParser parser = ArgumentParsers.newFor("PipeWrench").build();
+    Subparsers subparsers = parser.addSubparsers().help("sub-command help").dest("subparser_name");
+    Subparser cli = subparsers.addParser("cli");
+    cli.addArgument("--out").dest("outDir").setDefault("./dist");
+    subparsers.addParser("live");
+    try {
+      Namespace res = parser.parseArgs(args);
+      String mode = res.get("subparser_name");
+      if (mode == "cli") {
+        cli(res.get("outDir"));
+      }
+      if (mode == "live") {
+        live(args);
+      }
+    } catch (ArgumentParserException e) {
+      parser.handleError(e);
+      System.exit(1);
     }
   }
 
