@@ -8,8 +8,8 @@ import com.asledgehammer.typescript.util.DocBuilder;
 
 import java.lang.reflect.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import se.krka.kahlua.integration.annotations.LuaMethod;
 
@@ -28,8 +28,8 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
 
   private final String methodName;
 
-  List<Method> sortedMethods = new ArrayList<>();
-  List<List<Parameter>> allParameters = new ArrayList<>();
+  private List<Method> sortedMethods = new ArrayList<>();
+  private List<List<Parameter>> allParameters = new ArrayList<>();
   private boolean returnTypeContainsNonPrimitive = false;
 
   public TypeScriptMethodCluster(TypeScriptElement element, Method method) {
@@ -65,9 +65,35 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     if (clazz == null) return;
 
     ComplexGenericMap genericMap = this.element.genericMap;
-
     Method[] ms = clazz.getMethods();
+
+    if(this.methodNameOriginal.equalsIgnoreCase("cross")) {
+      System.out.println("methods: \n" + Arrays.toString(ms));
+    }
     Collections.addAll(sortedMethods, ms);
+
+    sortedMethods.removeIf(
+        method -> !method.getName().equals(TypeScriptMethodCluster.this.methodNameOriginal));
+
+    sortedMethods.sort((o1, o2) -> {
+
+      // Try the original method first. If this is different, then we use this order.
+      if(o1.getParameterCount() != o2.getParameterCount()) {
+        return o1.getParameterCount() - o2.getParameterCount();
+      }
+
+      // If otherwise, we go until the string comparison of type names is not zero.
+      Class<?>[] o1Types = o1.getParameterTypes();
+      Class<?>[] o2Types = o2.getParameterTypes();
+      for(int index = 0; index < o1Types.length; index++) {
+        Class<?> o1Type = o1Types[index];
+        Class<?> o2Type = o2Types[index];
+        int compare = o1Type.getName().compareTo(o2Type.getName());
+        if(compare != 0) return compare;
+      }
+
+      return 0;
+    });
 
     this.exists = sortedMethods.size() != 0;
 
@@ -222,11 +248,6 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
       docBuilder.appendLine();
     }
     docBuilder.appendLine("Method Parameters: ");
-
-
-    // Sort here so that the documentation looks nice, however the method params are consistent.
-    ArrayList<Method> sortedMethods = new ArrayList<>(this.sortedMethods);
-    sortedMethods.sort(Comparator.comparingInt(Method::getParameterCount));
 
     for (Method method : sortedMethods) {
       if (!methodNameOriginal.equals(method.getName())) continue;
