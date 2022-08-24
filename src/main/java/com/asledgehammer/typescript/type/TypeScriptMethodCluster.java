@@ -82,6 +82,9 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
         return o1.getParameterCount() - o2.getParameterCount();
       }
 
+      // Empty method params.
+      if(o1.getParameterCount() == 0) return 0;
+
       // If otherwise, we go until the string comparison of type names is not zero.
       Class<?>[] o1Types = o1.getParameterTypes();
       Class<?>[] o2Types = o2.getParameterTypes();
