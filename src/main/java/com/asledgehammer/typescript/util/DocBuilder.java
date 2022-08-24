@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-@SuppressWarnings({"unused", "UnusedReturnValue"})
 public class DocBuilder {
 
   private final List<String> lines = new ArrayList<>();
@@ -44,8 +43,9 @@ public class DocBuilder {
 
   public String build(String prefix) {
 
-    if (isEmpty()) return prefix + "/** */";
-    else if (lines.size() == 1) {
+    if (isEmpty()) {
+      return prefix + "/** */";
+    } else if (lines.size() == 1) {
       return prefix + "/** " + lines.get(0) + " */";
     }
 

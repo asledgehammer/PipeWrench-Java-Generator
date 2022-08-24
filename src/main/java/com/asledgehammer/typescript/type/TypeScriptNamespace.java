@@ -6,12 +6,11 @@ import com.asledgehammer.typescript.settings.Recursion;
 import java.util.*;
 import java.lang.ClassLoader;
 
-@SuppressWarnings("unused")
 public class TypeScriptNamespace
     implements TypeScriptResolvable, TypeScriptWalkable, TypeScriptCompilable {
 
-  private final Map<String, TypeScriptNamespace> namespaces = new HashMap<>();
   public final Map<String, TypeScriptElement> elements = new HashMap<>();
+  private final Map<String, TypeScriptNamespace> namespaces = new HashMap<>();
   private final TypeScriptNamespace parent;
   private final TypeScriptGraph graph;
   private final String fullPath;
@@ -23,12 +22,14 @@ public class TypeScriptNamespace
     String[] split = path.split("\\.");
     String name = split[split.length - 1];
 
-    if (name.equals("function"))
+    if (name.equals("function")) {
       name = '_' + name;
+    }
 
     this.name = name;
 
-    this.fullPath = (parent != null ? parent.fullPath + '.' : "") + (path.contains(".") ? split[0] : path);
+    this.fullPath =
+        (parent != null ? parent.fullPath + '.' : "") + (path.contains(".") ? split[0] : path);
   }
 
   @Override
@@ -39,8 +40,9 @@ public class TypeScriptNamespace
   @Override
   public TypeScriptElement resolve(String path) {
 
-    if (path.isEmpty())
+    if (path.isEmpty()) {
       return null;
+    }
 
     if (path.contains(".")) {
       String[] info = TypeScriptNamespace.shift(path);
@@ -61,8 +63,9 @@ public class TypeScriptNamespace
       return namespace.resolve(info[1]);
     }
 
-    if (elements.containsKey(path))
+    if (elements.containsKey(path)) {
       return elements.get(path);
+    }
 
     Class<?> clazz = null;
     ClassLoader cls = ClassLoader.getSystemClassLoader();
@@ -106,18 +109,17 @@ public class TypeScriptNamespace
   @Override
   public String compile(String prefixOriginal) {
 
-    boolean valid = false;
+    boolean hasElements = false;
     for (TypeScriptElement element : elements.values()) {
       if (element.isValid()) {
-        valid = true;
+        hasElements = true;
         break;
       }
     }
 
-    if (!valid)
+    if (!hasElements) {
       return "";
-
-    // namespaces.remove("function");
+    }
 
     StringBuilder builder = new StringBuilder(prefixOriginal);
 
@@ -175,17 +177,18 @@ public class TypeScriptNamespace
   }
 
   public static String[] shift(String path) {
-    if (!path.contains("."))
-      return new String[] { path };
+    if (!path.contains(".")) {
+      return new String[]{path};
+    }
     String[] split = path.split("\\.");
     if (split.length == 2) {
-      return new String[] { split[0], split[1] };
+      return new String[]{split[0], split[1]};
     } else {
       StringBuilder builder = new StringBuilder(split[1]);
       for (int index = 2; index < split.length; index++) {
         builder.append('.').append(split[index]);
       }
-      return new String[] { split[0], builder.toString() };
+      return new String[]{split[0], builder.toString()};
     }
   }
 

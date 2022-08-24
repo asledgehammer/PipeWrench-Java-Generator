@@ -14,14 +14,15 @@ public class TypeScriptEnum extends TypeScriptElement implements TypeScriptCompi
   private final Map<String, TypeScriptMethodCluster> methods = new HashMap<>();
   private final Map<String, TypeScriptMethodCluster> staticMethods = new HashMap<>();
 
-
   protected TypeScriptEnum(TypeScriptNamespace namespace, Class<?> clazz) {
     super(namespace, clazz);
   }
 
   @Override
   public void walk(TypeScriptGraph graph) {
-    if (walked) return;
+    if (walked) {
+      return;
+    }
     System.out.println("Walking " + getName());
     walkFields(graph);
     walkMethods(graph);
@@ -29,24 +30,36 @@ public class TypeScriptEnum extends TypeScriptElement implements TypeScriptCompi
   }
 
   private void walkFields(TypeScriptGraph graph) {
-    if (clazz == null) return;
+    if (clazz == null) {
+      return;
+    }
     for (Field field : clazz.getFields()) {
-      if (!field.getDeclaringClass().equals(clazz)) continue;
+      if (!field.getDeclaringClass().equals(clazz)) {
+        continue;
+      }
       if (Modifier.isPublic(field.getModifiers())) {
         fields.put(field.getName(), new TypeScriptField(this, field));
       }
     }
-    for (TypeScriptField field : fields.values()) field.walk(graph);
+    for (TypeScriptField field : fields.values()) {
+      field.walk(graph);
+    }
   }
 
   private void walkMethods(TypeScriptGraph graph) {
-    if (clazz == null) return;
+    if (clazz == null) {
+      return;
+    }
     methods.clear();
 
     TypeScriptSettings settings = namespace.getGraph().getCompiler().getSettings();
     for (Method method : clazz.getMethods()) {
-      if (settings.isBlackListed(method)) continue;
-      if (!Modifier.isPublic(method.getModifiers())) continue;
+      if (settings.isBlackListed(method)) {
+        continue;
+      }
+      if (!Modifier.isPublic(method.getModifiers())) {
+        continue;
+      }
       if (Modifier.isStatic(method.getModifiers())) {
         if (!staticMethods.containsKey(method.getName())) {
           staticMethods.put(method.getName(), new TypeScriptMethodCluster(this, method));
@@ -58,13 +71,19 @@ public class TypeScriptEnum extends TypeScriptElement implements TypeScriptCompi
       }
     }
 
-    for (TypeScriptMethodCluster method : this.methods.values()) method.walk(graph);
-    for (TypeScriptMethodCluster method : this.staticMethods.values()) method.walk(graph);
+    for (TypeScriptMethodCluster method : this.methods.values()) {
+      method.walk(graph);
+    }
+    for (TypeScriptMethodCluster method : this.staticMethods.values()) {
+      method.walk(graph);
+    }
   }
 
   @Override
   public String compile(String prefixOriginal) {
-    if (clazz == null) return "";
+    if (clazz == null) {
+      return "";
+    }
 
     TypeScriptSettings settings = getNamespace().getGraph().getCompiler().getSettings();
 
@@ -100,10 +119,14 @@ public class TypeScriptEnum extends TypeScriptElement implements TypeScriptCompi
       ArrayList<String> toRemove = new ArrayList<>();
       Map<String, TypeScriptField> fields = new HashMap<>(this.fields);
       for (String key : fields.keySet()) {
-        if (fields.get(key).isStatic()) toRemove.add(key);
+        if (fields.get(key).isStatic()) {
+          toRemove.add(key);
+        }
       }
       if (!toRemove.isEmpty()) {
-        for (String key : toRemove) fields.remove(key);
+        for (String key : toRemove) {
+          fields.remove(key);
+        }
       }
 
       if (!fields.isEmpty()) {

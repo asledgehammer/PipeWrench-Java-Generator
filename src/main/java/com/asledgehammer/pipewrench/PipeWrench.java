@@ -1,6 +1,5 @@
 package com.asledgehammer.pipewrench;
 
-import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Paths;
 import java.util.Scanner;
@@ -14,14 +13,7 @@ import net.sourceforge.argparse4j.inf.Subparsers;
 
 public class PipeWrench implements Runnable {
 
-  private Scanner scanner;
-  private RenderZomboid generator;
-  private StitchPipeWrench stitcher;
-
-  private volatile boolean bDone = false;
-
   private PipeWrench() {
-
   }
 
   @Override
@@ -31,9 +23,9 @@ public class PipeWrench implements Runnable {
       home = System.getProperty("user.home");
     }
     String outDir = Paths.get(home, "Zomboid", "PipeWrench").toString();
-    this.generator = new RenderZomboid(outDir);
-    scanner = new Scanner(System.in);
-    while (!bDone) {
+    RenderZomboid generator = new RenderZomboid(outDir);
+    Scanner scanner = new Scanner(System.in);
+    while (true) {
       String command;
       try {
         command = scanner.nextLine();
@@ -55,12 +47,12 @@ public class PipeWrench implements Runnable {
         switch (args[1]) {
           case "generate", "g" -> {
             System.out.println("[PIPEWRENCH] :: Generating Typings..");
-            this.generator.render();
+            generator.render();
             System.out.println("[PIPEWRENCH] :: Done.");
           }
           case "stitch", "s" -> {
             System.out.println("[PIPEWRENCH] :: Stitching Typings..");
-            stitcher = new StitchPipeWrench("PipeWrench", outDir);
+            StitchPipeWrench stitcher = new StitchPipeWrench("PipeWrench", outDir);
             stitcher.stitch();
             System.out.println("[PIPEWRENCH] :: Done.");
           }
@@ -73,8 +65,6 @@ public class PipeWrench implements Runnable {
 
       sleep();
     }
-
-    scanner.close();
   }
 
   private static void sleep() {
@@ -112,10 +102,10 @@ public class PipeWrench implements Runnable {
     try {
       Namespace res = parser.parseArgs(args);
       String mode = res.get("subparser_name");
-      if (mode == "cli") {
+      if (mode.equals("cli")) {
         cli(res.get("outDir"));
       }
-      if (mode == "live") {
+      if (mode.equals("live")) {
         live(args);
       }
     } catch (ArgumentParserException e) {
@@ -124,15 +114,16 @@ public class PipeWrench implements Runnable {
     }
   }
 
+  @SuppressWarnings("SameParameterValue")
   private static void invokeMain(String path, String[] args) {
     try {
       Class.forName(path)
           .getDeclaredMethod("main", String[].class)
-          .invoke(null, new Object[] { args });
+          .invoke(null, new Object[]{args});
     } catch (IllegalAccessException
-        | InvocationTargetException
-        | NoSuchMethodException
-        | ClassNotFoundException e) {
+             | InvocationTargetException
+             | NoSuchMethodException
+             | ClassNotFoundException e) {
       e.printStackTrace();
     }
   }
