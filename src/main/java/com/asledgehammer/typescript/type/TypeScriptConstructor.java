@@ -43,7 +43,7 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
 
     this.minParamCount = exists ? Integer.MAX_VALUE : 0;
 
-    if(exists) {
+    if(!sortedConstructors.isEmpty()) {
       sortedConstructors.sort((o1, o2) -> {
 
         // Try the original method first. If this is different, then we use this order.
@@ -55,12 +55,12 @@ public class TypeScriptConstructor implements TypeScriptWalkable, TypeScriptComp
         if(o1.getParameterCount() == 0) return 0;
 
         // If otherwise, we go until the string comparison of type names is not zero.
-        Class<?>[] o1Types = o1.getParameterTypes();
-        Class<?>[] o2Types = o2.getParameterTypes();
+        Type[] o1Types = o1.getGenericParameterTypes();
+        Type[] o2Types = o2.getGenericParameterTypes();
         for(int index = 0; index < o1Types.length; index++) {
-          Class<?> o1Type = o1Types[index];
-          Class<?> o2Type = o2Types[index];
-          int compare = o1Type.getName().compareTo(o2Type.getName());
+          Type o1Type = o1Types[index];
+          Type o2Type = o2Types[index];
+          int compare = o1Type.getTypeName().compareTo(o2Type.getTypeName());
           if(compare != 0) return compare;
         }
 

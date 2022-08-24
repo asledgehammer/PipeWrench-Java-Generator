@@ -11,7 +11,9 @@ import java.util.*;
 public class TypeScriptEnum extends TypeScriptElement implements TypeScriptCompilable {
 
   private final Map<String, TypeScriptField> fields = new HashMap<>();
-  private final Map<String, TypeScriptMethod> methods = new HashMap<>();
+  private final Map<String, TypeScriptMethodCluster> methods = new HashMap<>();
+  private final Map<String, TypeScriptMethodCluster> staticMethods = new HashMap<>();
+
 
   protected TypeScriptEnum(TypeScriptNamespace namespace, Class<?> clazz) {
     super(namespace, clazz);
@@ -39,13 +41,25 @@ public class TypeScriptEnum extends TypeScriptElement implements TypeScriptCompi
 
   private void walkMethods(TypeScriptGraph graph) {
     if (clazz == null) return;
+    methods.clear();
+
+    TypeScriptSettings settings = namespace.getGraph().getCompiler().getSettings();
     for (Method method : clazz.getMethods()) {
-      if (!method.getDeclaringClass().equals(clazz)) continue;
-      if (Modifier.isPublic(method.getModifiers())) {
-        methods.put(method.getName(), new TypeScriptMethod(this, method));
+      if (settings.isBlackListed(method)) continue;
+      if (!Modifier.isPublic(method.getModifiers())) continue;
+      if (Modifier.isStatic(method.getModifiers())) {
+        if (!staticMethods.containsKey(method.getName())) {
+          staticMethods.put(method.getName(), new TypeScriptMethodCluster(this, method));
+        }
+      } else {
+        if (!methods.containsKey(method.getName())) {
+          methods.put(method.getName(), new TypeScriptMethodCluster(this, method));
+        }
       }
     }
-    for (TypeScriptMethod method : methods.values()) method.walk(graph);
+
+    for (TypeScriptMethodCluster method : this.methods.values()) method.walk(graph);
+    for (TypeScriptMethodCluster method : this.staticMethods.values()) method.walk(graph);
   }
 
   @Override
@@ -107,12 +121,24 @@ public class TypeScriptEnum extends TypeScriptElement implements TypeScriptCompi
 
     stringBuilder.append(prefix).append("name(): string;\n");
     stringBuilder.append(prefix).append("ordinal(): number;\n");
+
     if (!methods.isEmpty()) {
       List<String> names = new ArrayList<>(methods.keySet());
       names.sort(Comparator.naturalOrder());
+      // Non-Static Method(s)
       for (String name : names) {
-        TypeScriptMethod method = methods.get(name);
-        stringBuilder.append(method.compile(prefix)).append("\n\n");
+        TypeScriptMethodCluster method = this.methods.get(name);
+        stringBuilder.append(method.compile(prefix)).append('\n');
+      }
+    }
+
+    if (!staticMethods.isEmpty()) {
+      List<String> names = new ArrayList<>(staticMethods.keySet());
+      names.sort(Comparator.naturalOrder());
+      // Static Method(s)
+      for (String name : names) {
+        TypeScriptMethodCluster method = this.staticMethods.get(name);
+        stringBuilder.append(method.compile(prefix)).append('\n');
       }
     }
 

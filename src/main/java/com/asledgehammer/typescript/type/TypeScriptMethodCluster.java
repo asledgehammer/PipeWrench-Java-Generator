@@ -41,7 +41,6 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     if(method.isAnnotationPresent(LuaMethod.class)) {
       LuaMethod annotation = method.getAnnotationsByType(LuaMethod.class)[0];
       this.methodName = annotation.name();
-      System.out.println("##### LUAMETHOD: " + this.methodName + " #####");
     } else {
       this.methodName = method.getName();
     }
@@ -67,9 +66,6 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     ComplexGenericMap genericMap = this.element.genericMap;
     Method[] ms = clazz.getMethods();
 
-    if(this.methodNameOriginal.equalsIgnoreCase("cross")) {
-      System.out.println("methods: \n" + Arrays.toString(ms));
-    }
     Collections.addAll(sortedMethods, ms);
 
     sortedMethods.removeIf(
@@ -82,20 +78,23 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
         return o1.getParameterCount() - o2.getParameterCount();
       }
 
-      // Empty method params.
-      if(o1.getParameterCount() == 0) return 0;
-
-      // If otherwise, we go until the string comparison of type names is not zero.
-      Class<?>[] o1Types = o1.getParameterTypes();
-      Class<?>[] o2Types = o2.getParameterTypes();
-      for(int index = 0; index < o1Types.length; index++) {
-        Class<?> o1Type = o1Types[index];
-        Class<?> o2Type = o2Types[index];
-        int compare = o1Type.getName().compareTo(o2Type.getName());
-        if(compare != 0) return compare;
+      // Check non-empty method parameters for string comparisons on type class-paths.
+      if(o1.getParameterCount() != 0) {
+        // If otherwise, we go until the string comparison of type names is not zero.
+        Type[] o1Types = o1.getGenericParameterTypes();
+        Type[] o2Types = o2.getGenericParameterTypes();
+        for(int index = 0; index < o1Types.length; index++) {
+          Type o1Type = o1Types[index];
+          Type o2Type = o2Types[index];
+          int compare = o1Type.getTypeName().compareTo(o2Type.getTypeName());
+          if(compare != 0) return compare;
+        }
       }
 
-      return 0;
+      // Next, check the return type.
+      String returnType1 = o1.getGenericReturnType().getTypeName();
+      String returnType2 = o2.getGenericReturnType().getTypeName();
+      return returnType1.compareTo(returnType2);
     });
 
     this.exists = sortedMethods.size() != 0;
