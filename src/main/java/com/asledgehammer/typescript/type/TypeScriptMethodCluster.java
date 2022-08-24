@@ -41,7 +41,6 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     if(method.isAnnotationPresent(LuaMethod.class)) {
       LuaMethod annotation = method.getAnnotationsByType(LuaMethod.class)[0];
       this.methodName = annotation.name();
-      System.out.println("##### LUAMETHOD: " + this.methodName + " #####");
     } else {
       this.methodName = method.getName();
     }
@@ -67,19 +66,10 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     ComplexGenericMap genericMap = this.element.genericMap;
     Method[] ms = clazz.getMethods();
 
-    if(this.methodNameOriginal.equalsIgnoreCase("cross")) {
-      System.out.println("methods: \n" + Arrays.toString(ms));
-    }
     Collections.addAll(sortedMethods, ms);
 
     sortedMethods.removeIf(
         method -> !method.getName().equals(TypeScriptMethodCluster.this.methodNameOriginal));
-
-    if(this.element.name.equalsIgnoreCase("BloodClothingType") && this.methodNameOriginal.equalsIgnoreCase("getCoveredParts")) {
-      System.out.println("######################## ");
-      System.out.println(sortedMethods);
-      System.out.println("######################## ");
-    }
 
     sortedMethods.sort((o1, o2) -> {
 
