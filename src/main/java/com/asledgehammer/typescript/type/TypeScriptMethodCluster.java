@@ -69,9 +69,6 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     Method[] ms = clazz.getMethods();
     Collections.addAll(sortedMethods, ms);
 
-    // NOTE: This makes the implementation randomized with same parameter counts on methods.
-    //    sortedMethods.sort(Comparator.comparingInt(Method::getParameterCount));
-
     this.exists = sortedMethods.size() != 0;
 
     this.minParamCount = exists ? Integer.MAX_VALUE : 0;
