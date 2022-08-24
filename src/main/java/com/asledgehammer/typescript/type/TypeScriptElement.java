@@ -42,7 +42,8 @@ public abstract class TypeScriptElement
 
   @Override
   public TypeScriptElement resolve(String path) {
-    if (this.clazz == null) return null;
+    if (this.clazz == null)
+      return null;
 
     if (path.contains("$")) {
       String[] split = path.split("\\$");
@@ -62,7 +63,8 @@ public abstract class TypeScriptElement
       return element.resolve(rebuiltPath.toString());
     }
 
-    if (elements.containsKey(path)) return elements.get(path);
+    if (elements.containsKey(path))
+      return elements.get(path);
 
     TypeScriptElement element = getSubElement(namespace, clazz, path);
     elements.put(path, element);
@@ -112,8 +114,7 @@ public abstract class TypeScriptElement
   public static String inspect(TypeScriptGraph graph, String string) {
 
     String original = "" + string;
-    string =
-        string.replaceAll("\\? super ", "").replaceAll("\\? extends ", "").replaceAll("\\?", "any");
+    string = string.replaceAll("\\? super ", "").replaceAll("\\? extends ", "").replaceAll("\\?", "any");
 
     string = TypeScriptElement.adaptType(string);
 
@@ -129,8 +130,7 @@ public abstract class TypeScriptElement
       int insideCount = 1;
       String s = string;
       int indexOfStart = s.indexOf("<");
-      label:
-      for (int offset = indexOfStart + 1; offset < s.length(); offset++) {
+      label: for (int offset = indexOfStart + 1; offset < s.length(); offset++) {
         char nextChar = s.charAt(offset);
         switch (nextChar) {
           case '<' -> {
@@ -141,21 +141,25 @@ public abstract class TypeScriptElement
             if (--insideCount == 0) {
               String arg = args.pop();
               if (!arg.isEmpty()) {
-                if (arg.equals("?")) arg = "any";
+                if (arg.equals("?"))
+                  arg = "any";
                 String reformedArg = inspect(graph, arg.trim());
                 string = string.replaceAll(arg.replaceAll("\\[", "\\\\["), reformedArg);
               }
               break label;
             }
             String arg = args.pop();
-            if (arg.equals("?")) arg = "any";
+            if (arg.equals("?"))
+              arg = "any";
             String reformedArg = inspect(graph, arg.trim());
             string = string.replaceAll(arg, reformedArg);
           }
-          case ' ' -> {}
+          case ' ' -> {
+          }
           case ',' -> {
             String arg = args.pop();
-            if (arg.equals("?")) arg = "any";
+            if (arg.equals("?"))
+              arg = "any";
             String reformedArg = inspect(graph, arg.trim());
             string = string.replaceAll(arg, reformedArg);
             args.push("");
@@ -181,7 +185,8 @@ public abstract class TypeScriptElement
     } else {
       try {
         String forName = string.replace("._function_", ".function");
-        Class<?> cl = Class.forName(forName);
+        ClassLoader cls = ClassLoader.getSystemClassLoader();
+        Class<?> cl = Class.forName(forName, false, cls);
         graph.add(cl);
       } catch (Exception ignored) {
       }
@@ -217,7 +222,8 @@ public abstract class TypeScriptElement
           "java.lang.Integer",
           "java.lang.Float",
           "java.lang.Double",
-          "java.lang.Long" -> "number";
+          "java.lang.Long" ->
+        "number";
       case "char", "java.lang.Character", "java.lang.String" -> "string";
       case "java.lang.Object" -> "any";
       case "java.lang.Void" -> "void";

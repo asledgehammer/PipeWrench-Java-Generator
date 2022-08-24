@@ -1,8 +1,5 @@
 package com.asledgehammer.pipewrench;
 
-import static com.asledgehammer.pipewrench.FileSystem.dirOutput;
-import static com.asledgehammer.pipewrench.FileSystem.dirPartials;
-
 import com.asledgehammer.typescript.util.DocBuilder;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -21,14 +18,16 @@ public class StitchPipeWrench {
   private static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
 
   private final String moduleName;
+  private final String targetDir;
 
-  public StitchPipeWrench(String moduleName) {
+  public StitchPipeWrench(String moduleName, String targetDir) {
     this.moduleName = moduleName;
+    this.targetDir = targetDir;
   }
 
   public void stitch() {
 
-    File[] files = dirPartials.listFiles();
+    File[] files = new File(targetDir).listFiles();
     if (files == null || files.length == 0) {
       System.err.println("No partial files to stitch.");
       System.exit(0);
@@ -54,7 +53,8 @@ public class StitchPipeWrench {
       String fileNameLower = fileName.toLowerCase();
 
       // Make sure the file is an API partial.
-      if (!fileNameLower.endsWith(".api.partial.d.ts")) continue;
+      if (!fileNameLower.endsWith(".api.partial.d.ts"))
+        continue;
       System.out.println("\tStitching file: " + file.getName() + "..");
 
       List<String> lines = getPartialFromTSFile(file);
@@ -68,12 +68,13 @@ public class StitchPipeWrench {
 
       builder.append('\n').append(border).append(comment).append(border).append('\n');
 
-      for (String line : lines) builder.append(line).append('\n');
+      for (String line : lines)
+        builder.append(line).append('\n');
     }
 
     builder.append("}\n");
 
-    File file = new File(dirOutput, moduleName + ".d.ts");
+    File file = new File(targetDir, moduleName + ".d.ts");
     write(file, builder);
 
     System.out.println("\n");
@@ -91,7 +92,8 @@ public class StitchPipeWrench {
       String fileNameLower = fileName.toLowerCase();
 
       // Make sure the file is an API partial.
-      if (!fileNameLower.endsWith(".reference.partial.d.ts")) continue;
+      if (!fileNameLower.endsWith(".reference.partial.d.ts"))
+        continue;
       System.out.println("\tStitching file: " + file.getName() + "..");
 
       List<String> lines = getPartialFromTSFile(file);
@@ -105,10 +107,11 @@ public class StitchPipeWrench {
 
       builder.append('\n').append(border).append(comment).append(border).append('\n');
 
-      for (String line : lines) builder.append(line).append('\n');
+      for (String line : lines)
+        builder.append(line).append('\n');
     }
 
-    File file = new File(dirOutput, "reference.d.ts");
+    File file = new File(targetDir, "reference.d.ts");
     write(file, builder);
     System.out.println("\n");
   }
@@ -126,7 +129,8 @@ public class StitchPipeWrench {
       String fileNameLower = fileName.toLowerCase();
 
       // Make sure the file is an API partial.
-      if (!fileNameLower.endsWith(".interface.partial.lua")) continue;
+      if (!fileNameLower.endsWith(".interface.partial.lua"))
+        continue;
       System.out.println("\tStitching file: " + file.getName() + "..");
 
       List<String> lines = getPartialFromLuaFile(file);
@@ -139,12 +143,13 @@ public class StitchPipeWrench {
       String border = "--" + "-".repeat(comment.length() - 5) + "--\n";
       builder.append('\n').append(border).append(comment).append(border).append('\n');
 
-      for (String line : lines) builder.append(line).append('\n');
+      for (String line : lines)
+        builder.append(line).append('\n');
     }
 
     builder.append("return Exports");
 
-    File file = new File(dirOutput, moduleName + ".lua");
+    File file = new File(targetDir, moduleName + ".lua");
     write(file, builder);
 
     System.out.println("\n");
@@ -170,10 +175,14 @@ public class StitchPipeWrench {
         String line = scanner.nextLine();
         String lineLower = line.toLowerCase();
         if (line.trim().startsWith("//")) {
-          if (lineLower.contains("[partial:start]")) in = true;
-          else if (lineLower.contains("[partial:stop]")) in = false;
-          else if (in) lines.add(line);
-        } else if (in) lines.add(line);
+          if (lineLower.contains("[partial:start]"))
+            in = true;
+          else if (lineLower.contains("[partial:stop]"))
+            in = false;
+          else if (in)
+            lines.add(line);
+        } else if (in)
+          lines.add(line);
       }
       scanner.close();
     } catch (FileNotFoundException e) {
@@ -191,10 +200,14 @@ public class StitchPipeWrench {
         String line = scanner.nextLine();
         String lineLower = line.toLowerCase();
         if (line.trim().startsWith("--")) {
-          if (lineLower.contains("[partial:start]")) in = true;
-          else if (lineLower.contains("[partial:stop]")) in = false;
-          else if (in) lines.add(line);
-        } else if (in) lines.add(line);
+          if (lineLower.contains("[partial:start]"))
+            in = true;
+          else if (lineLower.contains("[partial:stop]"))
+            in = false;
+          else if (in)
+            lines.add(line);
+        } else if (in)
+          lines.add(line);
       }
       scanner.close();
     } catch (FileNotFoundException e) {
@@ -204,33 +217,32 @@ public class StitchPipeWrench {
   }
 
   public static void main(String[] args) {
-    new StitchPipeWrench("PipeWrench").stitch();
+    new StitchPipeWrench("PipeWrench", args[0]).stitch();
   }
 
-  private static final String[] LICENSE =
-      new String[] {
-        "MIT License",
-        "",
-        "Copyright (c) $YEAR$ JabDoesThings",
-        "",
-        "Permission is hereby granted, free of charge, to any person obtaining a copy",
-        "of this software and associated documentation files (the \"Software\"), to deal",
-        "in the Software without restriction, including without limitation the rights",
-        "to use, copy, modify, merge, publish, distribute, sublicense, and/or sell",
-        "copies of the Software, and to permit persons to whom the Software is",
-        "furnished to do so, subject to the following conditions:",
-        "",
-        "The above copyright notice and this permission notice shall be included in all",
-        "copies or substantial portions of the Software.",
-        "",
-        "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR",
-        "IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,",
-        "FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE",
-        "AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER",
-        "LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,",
-        "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE",
-        "SOFTWARE."
-      };
+  private static final String[] LICENSE = new String[] {
+      "MIT License",
+      "",
+      "Copyright (c) $YEAR$ JabDoesThings",
+      "",
+      "Permission is hereby granted, free of charge, to any person obtaining a copy",
+      "of this software and associated documentation files (the \"Software\"), to deal",
+      "in the Software without restriction, including without limitation the rights",
+      "to use, copy, modify, merge, publish, distribute, sublicense, and/or sell",
+      "copies of the Software, and to permit persons to whom the Software is",
+      "furnished to do so, subject to the following conditions:",
+      "",
+      "The above copyright notice and this permission notice shall be included in all",
+      "copies or substantial portions of the Software.",
+      "",
+      "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR",
+      "IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,",
+      "FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE",
+      "AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER",
+      "LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,",
+      "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE",
+      "SOFTWARE."
+  };
 
   private String generateTSLicense() {
     Calendar calendar = Calendar.getInstance();

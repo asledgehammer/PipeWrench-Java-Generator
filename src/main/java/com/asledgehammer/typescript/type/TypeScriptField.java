@@ -57,7 +57,8 @@ public class TypeScriptField implements TypeScriptCompilable, TypeScriptWalkable
     this.adaptedReturn = TypeScriptElement.inspect(graph, this.adaptedReturn);
 
     try {
-      Class<?> cl = Class.forName(this.adaptedReturn);
+      ClassLoader cls = ClassLoader.getSystemClassLoader();
+      Class<?> cl = Class.forName(this.adaptedReturn, false, cls);
       graph.add(cl);
     } catch (Exception ignored) {
     }
@@ -86,15 +87,14 @@ public class TypeScriptField implements TypeScriptCompilable, TypeScriptWalkable
     DocBuilder doc = new DocBuilder();
     doc.appendLine(field.getGenericType().getTypeName());
 
-    String compiled =
-        doc.build(prefix)
-            + '\n'
-            + prefix
-            + (isStatic ? "static " : "")
-            + (isFinal ? "readonly " : "")
-            + field.getName()
-            + (!isPrimitive ? "?" : "")
-            + ": ";
+    String compiled = doc.build(prefix)
+        + '\n'
+        + prefix
+        + (isStatic ? "static " : "")
+        + (isFinal ? "readonly " : "")
+        + field.getName()
+        + (!isPrimitive ? "?" : "")
+        + ": ";
     compiled += adaptedReturn;
     return compiled + ";";
   }

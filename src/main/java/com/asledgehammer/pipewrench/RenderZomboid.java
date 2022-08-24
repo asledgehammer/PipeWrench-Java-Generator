@@ -1,8 +1,5 @@
 package com.asledgehammer.pipewrench;
 
-import static com.asledgehammer.pipewrench.FileSystem.dirJava;
-import static com.asledgehammer.pipewrench.FileSystem.dirPartials;
-
 import com.asledgehammer.typescript.TypeScriptCompiler;
 import com.asledgehammer.typescript.settings.Recursion;
 import com.asledgehammer.typescript.settings.TypeScriptSettings;
@@ -135,32 +132,21 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-@SuppressWarnings({"ResultOfMethodCallIgnored", "SpellCheckingInspection", "unused"})
+@SuppressWarnings({ "ResultOfMethodCallIgnored", "SpellCheckingInspection", "unused" })
 public class RenderZomboid {
+  private File outDir;
+  private File javaDir;
+  private File luaDir;
 
-  private static final String[] LICENSE =
-new String[] {"MIT License",
-"",
-"Copyright (c) $YEAR$ JabDoesThings",
-"",
-"Permission is hereby granted, free of charge, to any person obtaining a copy",
-"of this software and associated documentation files (the \"Software\"), to deal",
-"in the Software without restriction, including without limitation the rights",
-"to use, copy, modify, merge, publish, distribute, sublicense, and/or sell",
-"copies of the Software, and to permit persons to whom the Software is",
-"furnished to do so, subject to the following conditions:",
-"",
-"The above copyright notice and this permission notice shall be included in all",
-"copies or substantial portions of the Software.",
-"",
-"THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR",
-"IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,",
-"FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE",
-"AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER",
-"LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,",
-"OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE",
-"SOFTWARE."
-};
+  public RenderZomboid(String outDir) {
+    this.outDir = new File(outDir);
+    this.outDir.mkdirs();
+    this.javaDir = new File(this.outDir, "java");
+    this.javaDir.mkdirs();
+    this.luaDir = new File(this.outDir, "lua");
+    this.luaDir.mkdirs();
+
+  }
 
   private static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
   private static final List<Class<?>> classes = new ArrayList<>();
@@ -169,8 +155,6 @@ new String[] {"MIT License",
   static {
 
     addClassesToRender();
-
-    GLInitializer.init();
 
     TypeScriptSettings tsSettings = new TypeScriptSettings();
     tsSettings.methodsBlackListByPath.add("java.lang.Object#equals");
@@ -184,47 +168,25 @@ new String[] {"MIT License",
     tsSettings.readOnly = true;
 
     tsCompiler = new TypeScriptCompiler(tsSettings);
-    for (Class<?> clazz : classes) tsCompiler.add(clazz);
+    for (Class<?> clazz : classes)
+      tsCompiler.add(clazz);
   }
 
-  public static String MODULE_NAME = "PipeWrench";
+  public static String MODULE_NAME = "@asledgehammer/pipewrench";
 
-  public static void render() {
+  public void render() {
     tsCompiler.walk();
     renderZomboidAsMultiFile();
     renderLuaZomboid();
   }
 
-  private static String generateTSLicense() {
-    Calendar calendar = Calendar.getInstance();
-    DocBuilder docBuilder = new DocBuilder();
-    for(String line : LICENSE) {
-      docBuilder.appendLine(line.replaceAll("\\$YEAR\\$", "" + calendar.get(Calendar.YEAR)));
-    }
-    docBuilder.appendLine();
-//    docBuilder.appendLine("File generated at " + dateFormat.format(new Date()));
-    return docBuilder.build("");
-  }
-
-  private static String generateLuaLicense() {
-    Calendar calendar = Calendar.getInstance();
-    StringBuilder built = new StringBuilder();
-    for(String line : LICENSE) {
-      built.append("--- ").append(line.replaceAll("\\$YEAR\\$", "" + calendar.get(Calendar.YEAR))).append('\n');
-    }
-    built.append("---\n");
-//    built.append("--- File generated at ").append(dateFormat.format(new Date())).append('\n');
-    return built.toString();
-  }
-
-  private static void renderZomboidAsMultiFile() {
+  private void renderZomboidAsMultiFile() {
 
     Map<TypeScriptNamespace, String> compiledNamespaces = tsCompiler.compileNamespacesSeparately("  ");
 
     // Write all references to a file to refer to for all files.
     List<String> references = new ArrayList<>();
-    references.add("/// <reference path=\"" + MODULE_NAME + ".d.ts\" />\n");
-    for(TypeScriptNamespace namespace : compiledNamespaces.keySet()) {
+    for (TypeScriptNamespace namespace : compiledNamespaces.keySet()) {
       String fileName = namespace.getFullPath().replaceAll("\\.", "_") + ".d.ts";
       references.add("/// <reference path=\"java/" + fileName + "\" />\n");
     }
@@ -232,19 +194,17 @@ new String[] {"MIT License",
     references.sort(Comparator.naturalOrder());
 
     StringBuilder referenceBuilder = new StringBuilder();
-    for(String s : references) {
+    for (String s : references) {
       referenceBuilder.append(s);
     }
 
-    String output = generateTSLicense() + "\n\n";
-    output += "// [PARTIAL:START]\n";
+    String output = "// [PARTIAL:START]\n";
     output += referenceBuilder;
     output += "// [PARTIAL:STOP]\n";
-    write(new File(dirPartials, "Java.reference.partial.d.ts"), output);
+    write(new File(outDir, "java.reference.partial.d.ts"), output);
 
-    for(TypeScriptNamespace namespace : compiledNamespaces.keySet()) {
-      output = "/** @noResolution @noSelfInFile */\n";
-      output += "/// <reference path=\"../reference.d.ts\" />\n";
+    for (TypeScriptNamespace namespace : compiledNamespaces.keySet()) {
+      output = "/** @noSelfInFile */\n";
       output += "declare module '" + MODULE_NAME + "' {\n";
       output += compiledNamespaces.get(namespace) + "\n";
 
@@ -254,7 +214,8 @@ new String[] {"MIT License",
       for (int index = elements.size() - 1; index >= 0; index--) {
         TypeScriptElement element = elements.get(index);
         Class<?> clazz = element.getClazz();
-        if (clazz == null) continue;
+        if (clazz == null)
+          continue;
         String name = clazz.getSimpleName();
         if (name.contains("$")) {
           String[] split = name.split("\\$");
@@ -271,15 +232,14 @@ new String[] {"MIT License",
 
       String fileName = namespace.getFullPath().replaceAll("\\.", "_") + ".d.ts";
       System.out.println("Writing file: " + fileName + "..");
-      write(new File(dirJava, fileName), generateTSLicense() + "\n\n" + output);
+      write(new File(javaDir, fileName), output);
     }
 
-    String prepend = "/** @noResolution @noSelfInFile */\n";
-    prepend += "/// <reference path=\"reference.d.ts\" />\n";
+    String prepend = "/** @noSelfInFile */\n";
+    prepend += "/// <reference path=\"java.reference.partial.d.ts\" />\n";
     prepend += "declare module '" + MODULE_NAME + "' {\n";
-    prepend += "// [PARTIAL:START]\n";
-    TypeScriptClass globalObject =
-            (TypeScriptClass) tsCompiler.resolve(LuaManager.GlobalObject.class);
+    prepend += "  // [PARTIAL:START]\n";
+    TypeScriptClass globalObject = (TypeScriptClass) tsCompiler.resolve(LuaManager.GlobalObject.class);
 
     List<TypeScriptElement> elements = tsCompiler.getAllGeneratedElements();
     List<String> knownNames = new ArrayList<>();
@@ -288,7 +248,8 @@ new String[] {"MIT License",
     for (int index = elements.size() - 1; index >= 0; index--) {
       TypeScriptElement element = elements.get(index);
       Class<?> clazz = element.getClazz();
-      if (clazz == null) continue;
+      if (clazz == null)
+        continue;
       String name = clazz.getSimpleName();
       if (name.contains("$")) {
         String[] split = name.split("\\$");
@@ -315,10 +276,10 @@ new String[] {"MIT License",
 
       int genParams = element.getClazz().getTypeParameters().length;
       StringBuilder params = new StringBuilder();
-      if(genParams != 0) {
+      if (genParams != 0) {
         params.append("<");
-        for(int x = 0; x < genParams; x++) {
-          if(x == 0) {
+        for (int x = 0; x < genParams; x++) {
+          if (x == 0) {
             params.append("any");
           } else {
             params.append(", any");
@@ -328,7 +289,7 @@ new String[] {"MIT License",
       }
 
       String s;
-      if(element instanceof TypeScriptType) {
+      if (element instanceof TypeScriptType) {
         String fullPath = element.getClazz().getName();
         fullPath = fullPath.replaceAll(".function.", "._function_.");
         s = "  export type " + name + " = " + fullPath + params + '\n';
@@ -354,35 +315,35 @@ new String[] {"MIT License",
       builderMethods.append(s);
     }
 
-    // Add these two methods to the API. This helps arbitrate EventListener handling for custom solutions / APIs.
+    // Add these two methods to the API. This helps arbitrate EventListener handling
+    // for custom solutions / APIs.
     builderMethods.append("  export function addEventListener(id: string, listener: any): void;\n");
     builderMethods.append("  export function removeEventListener(id: string, listener: any): void;\n");
 
-    File fileZomboid = new File(dirPartials, "Java.api.partial.d.ts");
+    File fileZomboid = new File(outDir, "java.api.partial.d.ts");
     String content = prepend + builderClasses + '\n' + builderTypes + '\n' + builderMethods;
     content += "// [PARTIAL:STOP]\n";
     content += "}\n";
-    System.out.println("Writing file: Java.api.partial.d.ts..");
-    write(fileZomboid, generateTSLicense() + "\n\n" + content);
+    System.out.println("Writing file: java.api.partial.d.ts..");
+    write(fileZomboid, content);
   }
 
-  private static void renderLuaZomboid() {
+  private void renderLuaZomboid() {
 
     List<TypeScriptElement> elements = tsCompiler.getAllGeneratedElements();
     elements.sort(nameSorter);
 
-    String s =
-            """
-            local Exports = {}
-            -- [PARTIAL:START]
-            function Exports.tonumber(arg) return tonumber(arg) end
-            function Exports.tostring(arg) return tostring(arg) end
-            function Exports.global(id) return _G[id] end
-            function Exports.loadstring(lua) return loadstring(lua) end
-            function Exports.execute(lua) return loadstring(lua)() end
-            function Exports.addEventListener(id, func) Events[id].Add(func) end
-            function Exports.removeEventListener(id, func) Events[id].Add(func) end
-            """;
+    String s = """
+        local Exports = {}
+        -- [PARTIAL:START]
+        function Exports.tonumber(arg) return tonumber(arg) end
+        function Exports.tostring(arg) return tostring(arg) end
+        function Exports.global(id) return _G[id] end
+        function Exports.loadstring(lua) return loadstring(lua) end
+        function Exports.execute(lua) return loadstring(lua)() end
+        function Exports.addEventListener(id, func) Events[id].Add(func) end
+        function Exports.removeEventListener(id, func) Events[id].Add(func) end
+        """;
 
     StringBuilder builder = new StringBuilder(s);
     builder.append(tsCompiler.resolve(LuaManager.GlobalObject.class).compileLua("Exports"));
@@ -401,9 +362,10 @@ new String[] {"MIT License",
     builder.append("-- [PARTIAL:STOP]\n");
     builder.append("return Exports\n");
 
-    // Here we have to name the Lua file exactly the same as the module so require statements work.
-    File fileZomboidLua = new File(dirPartials, "Java.interface.partial.lua");
-    write(fileZomboidLua, generateLuaLicense() + "\n" + builder);
+    // Here we have to name the Lua file exactly the same as the module so require
+    // statements work.
+    File fileZomboidLua = new File(this.outDir, "java.interface.partial.lua");
+    write(fileZomboidLua, builder.toString());
   }
 
   static void addClassesToRender() {
@@ -962,12 +924,9 @@ new String[] {"MIT License",
     classes.sort(Comparator.comparing(Class::getSimpleName));
   }
 
-  public static void main(String[] args) {
-    new RenderZomboid().render();
-  }
-
   private static void addClass(Class<?> clazz) {
-    if (classes.contains(clazz)) return;
+    if (classes.contains(clazz))
+      return;
     classes.add(clazz);
   }
 
@@ -982,18 +941,17 @@ new String[] {"MIT License",
     }
   }
 
-  private static final Comparator<TypeScriptElement> nameSorter =
-      (o1, o2) -> {
-        String name1 = o1.getClazz() != null ? o1.getClazz().getSimpleName() : o1.getName();
-        if (name1.contains("$")) {
-          String[] split = name1.split("\\$");
-          name1 = split[split.length - 1];
-        }
-        String name2 = o2.getClazz() != null ? o2.getClazz().getSimpleName() : o2.getName();
-        if (name2.contains("$")) {
-          String[] split = name2.split("\\$");
-          name2 = split[split.length - 1];
-        }
-        return name1.compareTo(name2);
-      };
+  private static final Comparator<TypeScriptElement> nameSorter = (o1, o2) -> {
+    String name1 = o1.getClazz() != null ? o1.getClazz().getSimpleName() : o1.getName();
+    if (name1.contains("$")) {
+      String[] split = name1.split("\\$");
+      name1 = split[split.length - 1];
+    }
+    String name2 = o2.getClazz() != null ? o2.getClazz().getSimpleName() : o2.getName();
+    if (name2.contains("$")) {
+      String[] split = name2.split("\\$");
+      name2 = split[split.length - 1];
+    }
+    return name1.compareTo(name2);
+  };
 }
