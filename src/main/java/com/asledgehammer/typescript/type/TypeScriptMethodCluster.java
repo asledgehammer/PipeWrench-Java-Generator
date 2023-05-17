@@ -28,6 +28,10 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
   private int minParamCount = Integer.MAX_VALUE;
   private boolean returnTypeContainsNonPrimitive = false;
 
+  public List<Method> getSortedMethods() {
+    return sortedMethods;
+  }
+
   public TypeScriptMethodCluster(TypeScriptElement element, Method method) {
     this.element = element;
     this.isStatic = Modifier.isStatic(method.getModifiers());
@@ -56,33 +60,34 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     sortedMethods.removeIf(
         method -> !method.getName().equals(TypeScriptMethodCluster.this.methodNameOriginal));
 
-    sortedMethods.sort((o1, o2) -> {
+    sortedMethods.sort(
+        (o1, o2) -> {
 
-      // Try the original method first. If this is different, then we use this order.
-      if (o1.getParameterCount() != o2.getParameterCount()) {
-        return o1.getParameterCount() - o2.getParameterCount();
-      }
-
-      // Check non-empty method parameters for string comparisons on type class-paths.
-      if (o1.getParameterCount() != 0) {
-        // If otherwise, we go until the string comparison of type names is not zero.
-        Type[] o1Types = o1.getGenericParameterTypes();
-        Type[] o2Types = o2.getGenericParameterTypes();
-        for (int index = 0; index < o1Types.length; index++) {
-          Type o1Type = o1Types[index];
-          Type o2Type = o2Types[index];
-          int compare = o1Type.getTypeName().compareTo(o2Type.getTypeName());
-          if (compare != 0) {
-            return compare;
+          // Try the original method first. If this is different, then we use this order.
+          if (o1.getParameterCount() != o2.getParameterCount()) {
+            return o1.getParameterCount() - o2.getParameterCount();
           }
-        }
-      }
 
-      // Next, check the return type.
-      String returnType1 = o1.getGenericReturnType().getTypeName();
-      String returnType2 = o2.getGenericReturnType().getTypeName();
-      return returnType1.compareTo(returnType2);
-    });
+          // Check non-empty method parameters for string comparisons on type class-paths.
+          if (o1.getParameterCount() != 0) {
+            // If otherwise, we go until the string comparison of type names is not zero.
+            Type[] o1Types = o1.getGenericParameterTypes();
+            Type[] o2Types = o2.getGenericParameterTypes();
+            for (int index = 0; index < o1Types.length; index++) {
+              Type o1Type = o1Types[index];
+              Type o2Type = o2Types[index];
+              int compare = o1Type.getTypeName().compareTo(o2Type.getTypeName());
+              if (compare != 0) {
+                return compare;
+              }
+            }
+          }
+
+          // Next, check the return type.
+          String returnType1 = o1.getGenericReturnType().getTypeName();
+          String returnType2 = o2.getGenericReturnType().getTypeName();
+          return returnType1.compareTo(returnType2);
+        });
 
     this.exists = sortedMethods.size() != 0;
 
@@ -117,9 +122,10 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
 
           StringBuilder tName = new StringBuilder(argType.getTypeName());
           if (genericMap != null) {
-            tName = new StringBuilder(
-                ClazzUtils.walkTypesRecursively(
-                    genericMap, method.getDeclaringClass(), tName.toString()));
+            tName =
+                new StringBuilder(
+                    ClazzUtils.walkTypesRecursively(
+                        genericMap, method.getDeclaringClass(), tName.toString()));
           }
 
           tName = new StringBuilder(TypeScriptElement.inspect(graph, tName.toString()));
@@ -185,7 +191,8 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
       if (genericMap != null) {
         Class<?> declClazz = method.getDeclaringClass();
         String before = method.getGenericReturnType().getTypeName();
-        returnType = new StringBuilder(ClazzUtils.walkTypesRecursively(genericMap, declClazz, before));
+        returnType =
+            new StringBuilder(ClazzUtils.walkTypesRecursively(genericMap, declClazz, before));
       } else {
         returnType = new StringBuilder(method.getGenericReturnType().getTypeName());
       }
@@ -230,6 +237,167 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     }
   }
 
+  public String walkDocsLua1(boolean isStatic) {
+    Class<?> clazz = element.clazz;
+    if (clazz == null || !exists) {
+      return "";
+    }
+    StringBuilder docBuilder = new StringBuilder();
+    docBuilder.append("--- @public\n");
+    if (isStatic) {
+      docBuilder.append("--- @static\n");
+    }
+    docBuilder.append("---\n--- Method Parameters:\n");
+
+    for (Method method : sortedMethods) {
+      if (!methodNameOriginal.equals(method.getName())) {
+        continue;
+      }
+      if (Modifier.isStatic(method.getModifiers()) != isStatic) {
+        continue;
+      }
+
+      Parameter[] parameters = method.getParameters();
+
+      if (parameters.length != 0) {
+        StringBuilder compiled = new StringBuilder("(");
+        for (Parameter parameter : method.getParameters()) {
+          String tName =
+              (parameter.isVarArgs()
+                      ? parameter.getType().getComponentType().getSimpleName() + "..."
+                      : parameter.getType().getSimpleName())
+                  + " "
+                  + parameter.getName();
+          if (element.genericMap != null) {
+            tName = ClazzUtils.walkTypesRecursively(element.genericMap, element.clazz, tName);
+          }
+          tName = TypeScriptElement.adaptType(tName);
+          tName = TypeScriptElement.inspect(element.namespace.getGraph(), tName);
+          compiled.append(tName).append(", ");
+        }
+        compiled = new StringBuilder(compiled.substring(0, compiled.length() - 2) + ')');
+        String returnType =
+            ClazzUtils.walkTypesRecursively(
+                element.genericMap, element.clazz, method.getGenericReturnType().getTypeName());
+        returnType = TypeScriptElement.adaptType(returnType);
+        returnType = TypeScriptElement.inspect(element.namespace.getGraph(), returnType);
+        if (returnType.contains(".")) {
+          String[] split = returnType.split("\\.");
+          returnType = split[split.length - 1];
+        }
+        docBuilder.append("--- - ").append(compiled).append(": ").append(returnType).append("\n");
+      } else {
+        String compiled = "(Empty)";
+        String returnType =
+            ClazzUtils.walkTypesRecursively(
+                element.genericMap, element.clazz, method.getGenericReturnType().getTypeName());
+        returnType = TypeScriptElement.adaptType(returnType);
+        returnType = TypeScriptElement.inspect(element.namespace.getGraph(), returnType);
+        if (returnType.contains(".")) {
+          String[] split = returnType.split("\\.");
+          returnType = split[split.length - 1];
+        }
+        docBuilder.append("--- - ").append(compiled).append(": ").append(returnType).append("\n");
+      }
+    }
+
+    int argLength = allParameterTypes.size();
+    if (argLength != 0) {
+      docBuilder.append("---\n");
+
+      for (int index = 0; index < argLength; index++) {
+        docBuilder.append("--- @param arg").append(index + 1).append(" ");
+
+        List<Parameter> params = allParameters.get(index);
+        StringBuilder s = new StringBuilder();
+
+        for (Parameter next : params) {
+          String n = next.getType().getSimpleName();
+          if (s.indexOf(" " + n + " ") != -1) {
+            continue;
+          }
+          if (s.length() != 0) {
+            s.append(" | ");
+          }
+          s.append(n);
+        }
+        docBuilder.append(s).append('\n');
+      }
+    }
+
+    return docBuilder.toString();
+  }
+
+  public String walkDocsLua2(boolean isStatic) {
+    Class<?> clazz = element.clazz;
+    if (clazz == null || !exists) {
+      return "";
+    }
+    StringBuilder docBuilder = new StringBuilder();
+    docBuilder.append("--- @public\n");
+    if (isStatic) {
+      docBuilder.append("--- @static\n");
+    }
+
+    if (sortedMethods.size() > 1) {
+      docBuilder.append("---\n--- Additional Methods:\n");
+      for (int i = 1; i < sortedMethods.size(); i++) {
+        Method method = sortedMethods.get(i);
+        if (!methodNameOriginal.equals(method.getName())) {
+          continue;
+        }
+        if (Modifier.isStatic(method.getModifiers()) != isStatic) {
+          continue;
+        }
+
+        Parameter[] parameters = method.getParameters();
+        docBuilder.append("--- @overload fun(");
+        if (parameters.length != 0) {
+          StringBuilder compiled = new StringBuilder();
+          for (Parameter parameter : method.getParameters()) {
+            Class<?> pType = parameter.getType();
+            String tType =
+                    (parameter.isVarArgs()
+                            ? pType.getComponentType().getSimpleName() + "..."
+                            : pType.getSimpleName());
+            String tName = parameter.getName();
+            tName = TypeScriptElement.adaptType(tName);
+            tName = TypeScriptElement.inspect(element.namespace.getGraph(), tName);
+            compiled.append(tName).append(": ").append(tType).append(", ");
+          }
+          compiled = new StringBuilder(compiled.substring(0, compiled.length() - 2) + ')');
+          docBuilder.append(compiled).append("\n");
+        } else {
+          String compiled = "(Empty)";
+
+          docBuilder.append(compiled).append("\n\n");
+        }
+      }
+      docBuilder.append("---\n");
+    }
+
+    Method methodFirst = sortedMethods.get(0);
+    Parameter[] parameters = methodFirst.getParameters();
+    if (parameters.length != 0) {
+      docBuilder.append("---\n--- Parameters:\n");
+      for (Parameter parameter : parameters) {
+        String tName = parameter.getName();
+        tName = TypeScriptElement.adaptType(tName);
+        tName = TypeScriptElement.inspect(element.namespace.getGraph(), tName);
+        docBuilder
+            .append("--- @param ")
+            .append(tName)
+            .append(" ")
+            .append(parameter.getType().getSimpleName())
+            .append('\n');
+      }
+    }
+
+    docBuilder.append("---\n--- @return ").append(methodFirst.getReturnType().getSimpleName()).append("\n");
+
+    return docBuilder.toString();
+  }
+
   private String walkDocs(String prefix) {
     Class<?> clazz = element.clazz;
     if (clazz == null || !exists) {
@@ -255,11 +423,12 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
       if (parameters.length != 0) {
         StringBuilder compiled = new StringBuilder("(");
         for (Parameter parameter : method.getParameters()) {
-          String tName = (parameter.isVarArgs()
-              ? parameter.getType().getComponentType().getSimpleName() + "..."
-              : parameter.getType().getSimpleName())
-              + " "
-              + parameter.getName();
+          String tName =
+              (parameter.isVarArgs()
+                      ? parameter.getType().getComponentType().getSimpleName() + "..."
+                      : parameter.getType().getSimpleName())
+                  + " "
+                  + parameter.getName();
           if (element.genericMap != null) {
             tName = ClazzUtils.walkTypesRecursively(element.genericMap, element.clazz, tName);
           }
@@ -268,20 +437,23 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
           compiled.append(tName).append(", ");
         }
         compiled = new StringBuilder(compiled.substring(0, compiled.length() - 2) + ')');
-        String returnType = ClazzUtils.walkTypesRecursively(
-            element.genericMap, element.clazz, method.getGenericReturnType().getTypeName());
+        String returnType =
+            ClazzUtils.walkTypesRecursively(
+                element.genericMap, element.clazz, method.getGenericReturnType().getTypeName());
         returnType = TypeScriptElement.adaptType(returnType);
         returnType = TypeScriptElement.inspect(element.namespace.getGraph(), returnType);
         docBuilder.appendLine(" - " + compiled + ": " + returnType);
       } else {
         String compiled = "(Empty)";
-        String returnType = ClazzUtils.walkTypesRecursively(
-            element.genericMap, element.clazz, method.getGenericReturnType().getTypeName());
+        String returnType =
+            ClazzUtils.walkTypesRecursively(
+                element.genericMap, element.clazz, method.getGenericReturnType().getTypeName());
         returnType = TypeScriptElement.adaptType(returnType);
         returnType = TypeScriptElement.inspect(element.namespace.getGraph(), returnType);
         docBuilder.appendLine(" - " + compiled + ": " + returnType);
       }
     }
+
     return docBuilder.build(prefix);
   }
 
@@ -319,7 +491,8 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
       for (TypeVariable<?> variable : genericTypes) {
         genericParamsBody.append(variable.getTypeName()).append(", ");
       }
-      genericParamsBody = new StringBuilder(genericParamsBody.substring(0, genericParamsBody.length() - 2) + '>');
+      genericParamsBody =
+          new StringBuilder(genericParamsBody.substring(0, genericParamsBody.length() - 2) + '>');
       builder.append(genericParamsBody);
     }
 
@@ -422,16 +595,21 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
     return builder.toString();
   }
 
-  public String compileLua(String table) {
+  public String compileLuaParams() {
     StringBuilder params = new StringBuilder();
-    if (!allParameters.isEmpty()) {
-      for (int i = 0; i < this.allParameters.size(); i++) {
-        params.append("arg").append(i + 1).append(",");
+    Method methodFirst = sortedMethods.get(0);
+    Parameter[] parameters = methodFirst.getParameters();
+    if (parameters.length != 0) {
+      for (Parameter parameter : parameters) {
+        params.append(parameter.getName()).append(", ");
       }
-      params = new StringBuilder(params.substring(0, params.length() - 1));
+      params = new StringBuilder(params.substring(0, params.length() - 2));
     }
+    return params.toString();
+  }
 
-    String p = '(' + params.toString() + ')';
+  public String compileLua(String table) {
+    String p = '(' + compileLuaParams() + ')';
     String compiled = "function " + table + '.' + sanitizeName(methodName) + p;
     compiled += " return " + this.methodName + p + " end";
     return compiled;
@@ -464,7 +642,8 @@ public class TypeScriptMethodCluster implements TypeScriptWalkable, TypeScriptCo
       for (TypeVariable<?> variable : genericTypes) {
         genericParamsBody.append(variable.getTypeName()).append(", ");
       }
-      genericParamsBody = new StringBuilder(genericParamsBody.substring(0, genericParamsBody.length() - 2) + '>');
+      genericParamsBody =
+          new StringBuilder(genericParamsBody.substring(0, genericParamsBody.length() - 2) + '>');
       builder.append(genericParamsBody);
     }
 

@@ -83,7 +83,8 @@ public class PipeWrench implements Runnable {
   public static void cli(String outDir) {
     System.out.println("Exporting to " + outDir);
     RenderZomboid renderer = new RenderZomboid(outDir);
-    renderer.render();
+//    renderer.render();
+    renderer.renderEmmyLua();
   }
 
   public static void live(String[] args) {

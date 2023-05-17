@@ -17,6 +17,8 @@ public class TypeScriptField implements TypeScriptCompilable, TypeScriptWalkable
   private final boolean bStatic;
   private final boolean bFinal;
   private final boolean bPrimitive;
+  private final boolean bPublic;
+
   private boolean walked = false;
   private String adaptedReturn;
 
@@ -32,6 +34,10 @@ public class TypeScriptField implements TypeScriptCompilable, TypeScriptWalkable
     return bPrimitive;
   }
 
+  public boolean isbPublic() {
+    return bPublic;
+  }
+
   public TypeScriptField(TypeScriptElement container, Field field) {
     this.container = container;
     this.field = field;
@@ -39,6 +45,7 @@ public class TypeScriptField implements TypeScriptCompilable, TypeScriptWalkable
     this.bStatic = Modifier.isStatic(modifiers);
     this.bFinal = Modifier.isFinal(modifiers);
     this.bPrimitive = field.getType().isPrimitive();
+    this.bPublic = Modifier.isPublic(modifiers);
   }
 
   @Override
@@ -87,14 +94,15 @@ public class TypeScriptField implements TypeScriptCompilable, TypeScriptWalkable
     DocBuilder doc = new DocBuilder();
     doc.appendLine(field.getGenericType().getTypeName());
 
-    String compiled = doc.build(prefix)
-        + '\n'
-        + prefix
-        + (isStatic ? "static " : "")
-        + (isFinal ? "readonly " : "")
-        + field.getName()
-        + (!isPrimitive ? "?" : "")
-        + ": ";
+    String compiled =
+        doc.build(prefix)
+            + '\n'
+            + prefix
+            + (isStatic ? "static " : "")
+            + (isFinal ? "readonly " : "")
+            + field.getName()
+            + (!isPrimitive ? "?" : "")
+            + ": ";
     compiled += adaptedReturn;
     return compiled + ";";
   }
@@ -109,5 +117,23 @@ public class TypeScriptField implements TypeScriptCompilable, TypeScriptWalkable
 
   public boolean hasWalked() {
     return walked;
+  }
+
+  public String getType() {
+    String s = field.getType().getTypeName();
+    if (s.indexOf('.') != -1) {
+      String[] ss = s.split("\\.");
+      s = ss[ss.length - 1];
+    }
+
+//    if(s.equals("String")) {
+//      s = s.toLowerCase();
+//    }
+//
+//    if(s.equals("int") || s.equals("double") || s.equals("float") || s.equals("long") || s.equals("short") || s.equals("byte")) {
+//      s = "number";
+//    }
+
+    return s;
   }
 }

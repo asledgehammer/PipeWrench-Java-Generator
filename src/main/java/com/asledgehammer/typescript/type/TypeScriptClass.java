@@ -15,6 +15,10 @@ public class TypeScriptClass extends TypeScriptElement {
   private final Map<String, TypeScriptMethodCluster> staticMethods = new HashMap<>();
   private TypeScriptConstructor constructor;
 
+  public Map<String, TypeScriptMethodCluster> getMethods() {
+    return methods;
+  }
+
   protected TypeScriptClass(TypeScriptNamespace namespace, Class<?> clazz) {
     super(namespace, clazz);
   }
@@ -276,5 +280,9 @@ public class TypeScriptClass extends TypeScriptElement {
 
   public Map<String, TypeScriptMethodCluster> getStaticMethods() {
     return this.staticMethods;
+  }
+
+  public Map<String, TypeScriptField> getFields() {
+    return fields;
   }
 }

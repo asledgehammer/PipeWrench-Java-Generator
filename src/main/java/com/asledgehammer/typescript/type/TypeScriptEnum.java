@@ -14,6 +14,18 @@ public class TypeScriptEnum extends TypeScriptElement implements TypeScriptCompi
   private final Map<String, TypeScriptMethodCluster> methods = new HashMap<>();
   private final Map<String, TypeScriptMethodCluster> staticMethods = new HashMap<>();
 
+  public Map<String, TypeScriptMethodCluster> getMethods() {
+    return methods;
+  }
+
+  public Map<String, TypeScriptMethodCluster> getStaticMethods() {
+    return staticMethods;
+  }
+
+  public Map<String, TypeScriptField> getFields() {
+    return fields;
+  }
+
   protected TypeScriptEnum(TypeScriptNamespace namespace, Class<?> clazz) {
     super(namespace, clazz);
   }
