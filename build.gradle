@@ -35,6 +35,10 @@ dependencies {
     implementation 'net.sourceforge.argparse4j:argparse4j:0.9.0'
     // PZ Libraries
     implementation fileTree(dir: 'lib', include: ['*.jar'])
+    implementation 'org.jetbrains:annotations:24.0.0'
+// https://mvnrepository.com/artifact/junit/junit
+    testImplementation 'junit:junit:4.4'
+
 }
 
 task obfuscate {
